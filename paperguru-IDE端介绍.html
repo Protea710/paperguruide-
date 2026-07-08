@@ -1,0 +1,2693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>PaperGuru IDE — 桌面端科研智能体</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&family=Noto+Serif+SC:wght@400;500;600;700&display=optional" rel="stylesheet">
+<style>
+:root{
+  --pine:#0a3531;
+  --pine-2:#164942;
+  --gold:#a9804c;
+  --gold-soft:#dccaa7;
+  --gold-glow:#ecd9b4;            /* 深色背景上的金色，比 gold-soft 略亮一档，保证对比度 */
+  --ivory:#f7f3eb;
+  --paper:#fbf8f2;
+  --ink:#1a1b18;
+  --muted:#4f5a55;
+  --quiet:#747c76;
+  --line:rgba(35,44,40,.12);
+  --line-strong:rgba(35,44,40,.2);
+  --white:#fff;
+  --shadow:0 1.375rem 3.750rem color-mix(in srgb,var(--pine) 9%,transparent);
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --font-body:"Inter","SF Pro Text","Noto Sans SC","PingFang SC","Hiragino Sans GB",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-display:"Noto Serif SC","Songti SC","STSong",serif;
+  --font-en:"Cormorant Garamond","Times New Roman",Georgia,serif;
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+section,header{scroll-margin-top:5.500rem;}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:0.969rem;
+  line-height:1.82;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+button,a{font:inherit;}
+a{color:inherit;text-decoration:none;}
+/* ============ a11y：键盘焦点高对比轮廓（:focus-visible 仅键盘导航触发，不影响鼠标点击） ============ */
+a:focus-visible,button:focus-visible,.btn:focus-visible,
+.module-card:focus-visible,.module-back:focus-visible{
+  outline:0.1875rem solid var(--gold-glow);
+  outline-offset:0.1875rem;
+  border-radius:inherit;
+}
+.nav-links a:focus-visible{outline-offset:0.25rem;}
+.page{overflow:hidden;background:linear-gradient(180deg,#fbf8f2 0%,#f6f1e8 52%,#fbf8f2 100%);}
+.container{width:min(73.750rem,calc(100% - 3rem));margin:0 auto;}
+
+/* ============ 导航栏：顶部透明，滚动后过渡到半透明模糊 ============ */
+.nav{
+  position:fixed;
+  inset-block-start:0;          /* 逻辑属性：替代 top:0，天然支持 RTL */
+  inset-inline:0;               /* 逻辑属性：替代 left:0;right:0 */
+  z-index:30;
+  height:4.500rem;
+  border-bottom:1px solid transparent;
+  background:transparent;
+  backdrop-filter:blur(0);
+  color:var(--gold-glow);
+  transition:background .45s ease,backdrop-filter .45s ease,border-color .45s ease,box-shadow .45s ease,color .35s ease;
+}
+.nav.scrolled{
+  background:color-mix(in srgb,var(--pine) 78%,transparent);  /* 动态透明度，色板变更自动同步 */
+  backdrop-filter:blur(1.375rem);
+  -webkit-backdrop-filter:blur(1.375rem);
+  border-bottom:1px solid rgba(255,255,255,.16);
+  box-shadow:0 0.625rem 1.875rem rgba(8,40,36,.18);
+  color:#fff;
+}
+.nav-inner{height:100%;display:flex;align-items:center;justify-content:space-between;gap:1.500rem;}
+.brand{display:flex;align-items:baseline;gap:0.625rem;white-space:nowrap;}
+.brand-mark{font-family:var(--font-en);font-weight:600;letter-spacing:.025em;font-size:1.438rem;line-height:1;}
+.brand-mark .dot{color:currentColor;}
+.brand-sub{font-size:0.688rem;color:rgba(236,217,180,.72);letter-spacing:.22em;text-transform:uppercase;font-weight:400;transition:color .35s ease;}
+.nav.scrolled .brand-sub{color:rgba(255,255,255,.74);}
+.nav-links{display:flex;align-items:center;gap:1.500rem;font-size:0.781rem;color:rgba(236,217,180,.78);font-weight:400;letter-spacing:.06em;transition:color .35s ease;}
+.nav.scrolled .nav-links{color:rgba(255,255,255,.8);}
+.nav-links a{transition:color .2s ease;}
+.nav-links a:hover{color:var(--gold-glow);}
+.nav.scrolled .nav-links a:hover{color:#fff;}
+
+/* ============ Hero ============ */
+.hero{
+  min-height:47.500rem;
+  height:92vh;
+  max-height:56.250rem;
+  position:relative;
+  display:flex;
+  align-items:center;
+  padding:7.375rem 0 4.375rem;
+  color:#fff;
+  background:
+    /* 冷色蒙层：文字区域（左中）最暗保证可读性，向右渐淡让星系背景透出 */
+    linear-gradient(105deg,rgba(9,12,38,.88) 0%,rgba(14,17,48,.70) 32%,rgba(22,18,54,.42) 54%,rgba(30,26,74,.16) 72%,rgba(30,26,74,.04) 100%),
+    /* 仙女座星系 M31 深空摄影（Unsplash 直链，免费可商用，作最底层背景长期停留） */
+    url('https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?fm=jpg&q=80&w=2400&auto=format&fit=crop') center/cover no-repeat,
+    /* 图片未加载时的冷色兜底 */
+    radial-gradient(ellipse 62% 58% at 50% 42%,#141633 0%,#0c0e26 55%,#070817 100%);
+  overflow:hidden;
+}
+.hero::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  height:15rem;
+  background:
+    linear-gradient(180deg,
+      rgba(251,248,242,0) 0%,
+      rgba(226,222,211,.08) 28%,
+      rgba(230,226,216,.38) 58%,
+      rgba(246,241,232,.82) 82%,
+      var(--paper) 100%);
+  pointer-events:none;
+  z-index:4;
+}
+.hero-content{position:relative;z-index:3;width:min(43.750rem,100%);margin:0 auto;text-align:center;}
+
+/* ============ 首屏 3D 知识星图（第一幕 · Three.js） ============ */
+.starmap{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  transition:opacity .95s var(--ease-out),transform .95s var(--ease-out),filter .95s var(--ease-out);
+}
+.starmap-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+/* DOM 标签层：Three.js 每帧把节点投影坐标写入各 label 的 --sx/--sy */
+.starmap-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.smap-label{
+  position:absolute;
+  left:0;top:0;
+  transform:translate3d(var(--sx,0),var(--sy,0),0) translate(-50%,-50%);
+  white-space:nowrap;
+  opacity:0;
+  filter:blur(0.16rem);
+  transition:opacity .6s var(--ease-out),filter .6s var(--ease-out);
+  will-change:transform,opacity;
+}
+.smap-label.show{opacity:1;filter:blur(0);}
+.smap-label.dim{opacity:.16;}
+/* 中心：空心圆角描边框（最重）——取消发光光斑，改边框 */
+.smap-core{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:clamp(1.35rem,2.7vw,2.28rem);
+  color:#fff;
+  letter-spacing:.03em;
+  padding:0.68rem 1.55rem;
+  border:1.5px solid rgba(236,217,180,.74);
+  border-radius:62.438rem;
+  background:rgba(12,14,40,.34);
+  box-shadow:0 0 0 0.32rem rgba(236,217,180,.065);
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
+}
+.smap-core.show{
+  box-shadow:0 0 0 0.32rem rgba(236,217,180,.07),0 0 2rem rgba(236,217,180,.16);
+}
+/* 枢纽：空心圆角描边框（较轻） */
+.smap-hub{
+  font-family:var(--font-display);
+  font-weight:600;
+  font-size:clamp(0.84rem,1.35vw,1.06rem);
+  color:rgba(236,217,180,.92);
+  letter-spacing:.04em;
+  padding:0.34rem 0.8rem;
+  border:1px solid rgba(236,217,180,.42);
+  border-radius:62.438rem;
+  background:rgba(12,14,40,.34);
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
+  text-shadow:0 0 1rem rgba(236,217,180,.3);
+}
+.smap-hub.show{box-shadow:0 0 1rem rgba(236,217,180,.08);}
+/* 二级词：纯文字，无框 */
+.smap-leaf{
+  font-family:var(--font-body);
+  font-weight:400;
+  font-size:clamp(0.68rem,1vw,0.84rem);
+  color:rgba(236,217,180,.88);
+  letter-spacing:.06em;
+  padding:0.14rem 0.4rem;
+  border-radius:0.25rem;
+  background:rgba(9,12,38,.58);
+  backdrop-filter:blur(0.375rem);
+  -webkit-backdrop-filter:blur(0.375rem);
+  text-shadow:0 0 0.62rem rgba(9,12,38,.94),0 1px 2px rgba(9,12,38,.78);
+}
+
+/* 开场金色引导语（居中偏上，所有元素最前，出现→淡出→再走星图） */
+.starmap-lead{
+  position:absolute;
+  left:50%;
+  top:42%;
+  transform:translate(-50%,-50%) translateY(0.6rem);
+  z-index:6;
+  text-align:center;
+  width:max-content;
+  max-width:90vw;
+  opacity:0;
+  transition:opacity .9s var(--ease-out),transform .9s var(--ease-out);
+  pointer-events:none;
+}
+.starmap-lead.show{opacity:1;transform:translate(-50%,-50%);}
+.starmap-lead.gone{opacity:0;transform:translate(-50%,-50%) translateY(-0.6rem);}
+.starmap-eyebrow{justify-content:center;margin:0 0 1rem;color:var(--gold-glow);}
+.starmap-eyebrow::before{background:var(--gold-glow);}
+.starmap-lead-line{
+  margin:0;
+  font-family:var(--font-display);
+  font-weight:600;
+  font-size:clamp(1.25rem,2.8vw,2.05rem);
+  color:var(--gold-glow);                       /* 金色 */
+  line-height:1.5;
+  letter-spacing:.02em;
+  text-shadow:0 0 2rem rgba(236,217,180,.4);
+}
+.starmap-lead-line em{font-style:normal;color:#fff;}   /* “多维”用白色点出，金底白字对比 */
+
+/* 第二幕：产品介绍，初始隐藏，星图退场后浮现 */
+.hero-intro-wrap{position:relative;z-index:3;opacity:0;pointer-events:none;transition:opacity .6s var(--ease-out);}
+/* 过渡态：星图淡出下沉虚化 */
+.hero.hero-fading .starmap,
+.hero.hero-revealed .starmap{opacity:0;transform:translateY(-1.5rem) scale(1.05);filter:blur(0.5rem);pointer-events:none;}
+.hero.hero-revealed .hero-intro-wrap{opacity:1;pointer-events:auto;}
+
+/* 介绍文字依次入场：每个元素初始下沉透明，加 .seq-in 后浮现（JS 逐个添加） */
+html.js .hero[data-hero] .hero-intro .seq{opacity:0;transform:translateY(0.9rem);transition:opacity .7s var(--ease-out),transform .7s var(--ease-out);}
+html.js .hero[data-hero] .hero-intro .seq.seq-in{opacity:1;transform:none;}
+
+/* 无 JS 时：直接显示介绍，隐藏星图（渐进增强兜底） */
+html:not(.js) .starmap{display:none;}
+html:not(.js) .hero-intro-wrap{opacity:1;pointer-events:auto;}
+html:not(.js) .hero-intro .seq{opacity:1;transform:none;}
+
+/* reduced-motion：跳过星图，直接呈现产品介绍（JS 也会加 hero-revealed，这里再保险） */
+@media (prefers-reduced-motion:reduce){
+  .starmap{transition:none;}
+  .hero-intro-wrap{transition:none;}
+  .hero-intro .seq{transition:none;opacity:1;transform:none;}
+}
+.eyebrow{
+  margin:0 0 1.250rem;
+  display:inline-flex;
+  align-items:center;
+  gap:0.750rem;
+  color:var(--gold-glow);
+  font-family:var(--font-en);
+  font-size:0.875rem;
+  font-weight:500;
+  letter-spacing:.38em;
+  text-transform:uppercase;
+}
+.eyebrow::before{content:"";width:2.625rem;height:1px;background:var(--gold-glow);}
+.hero-intro .eyebrow::before{display:none;}
+h1{
+  margin:0;
+  font-family:var(--font-display);
+  font-size:clamp(2.55rem,5.6vw,4.35rem);
+  line-height:1.14;
+  letter-spacing:0;
+  font-weight:600;
+  text-wrap:balance;
+}
+.hero-title-main{display:block;max-width:40rem;margin:0 auto;}
+.hero-title-accent{
+  display:block;
+  margin-top:0.750rem;
+  font-family:var(--font-display);
+  font-weight:500;
+  color:var(--gold-glow);
+  font-size:clamp(1.188rem,2.35vw,1.875rem);
+  line-height:1.42;
+  letter-spacing:0;
+}
+.hero-lede{
+  max-width:34.500rem;
+  margin:1.375rem auto 0;
+  color:rgba(255,255,255,.78);
+  font-family:var(--font-body);
+  font-size:clamp(0.875rem,1.05vw,0.969rem);
+  line-height:1.92;
+  font-weight:400;
+}
+.hero-actions{display:flex;align-items:center;justify-content:center;gap:0.875rem;flex-wrap:wrap;margin-top:1.875rem;}
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:2.750rem;
+  padding:0 1.500rem;
+  border:1px solid rgba(255,255,255,.28);
+  border-radius:62.438rem;
+  color:#fff;
+  background:rgba(255,255,255,.045);
+  transition:transform .2s ease,background .2s ease,border-color .2s ease;
+  font-weight:500;
+  letter-spacing:.06em;
+  font-size:0.812rem;
+}
+.btn:hover{transform:translateY(-2px);background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.55);}
+.btn.primary{background:#f3ead9;border-color:#f3ead9;color:#173632;}
+.btn.primary:hover{background:#fff5e5;border-color:#fff5e5;}
+
+/* ============ 关键数字 ============ */
+.metric-strip{
+  position:relative;
+  z-index:5;
+  margin-top:-82px;
+}
+.metric-strip::before{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  top:-7.25rem;
+  bottom:-3.75rem;
+  z-index:0;
+  pointer-events:none;
+  background:
+    linear-gradient(180deg,
+      rgba(13,18,42,0) 0%,
+      rgba(55,65,82,.18) 24%,
+      rgba(218,222,219,.58) 56%,
+      rgba(246,241,232,.96) 86%,
+      var(--paper) 100%);
+}
+.metrics{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  background:rgba(255,255,255,.86);
+  border:1px solid rgba(35,44,40,.1);
+  box-shadow:0 1.375rem 4.25rem rgba(18,31,46,.12);
+  backdrop-filter:blur(0.625rem);
+  -webkit-backdrop-filter:blur(0.625rem);
+}
+.metric{min-height:8.250rem;padding:1.562rem 1.625rem;border-right:1px solid var(--line);}
+.metric:last-child{border-right:0;}
+.metric-value{font-family:var(--font-display);font-size:1.938rem;line-height:1.08;font-weight:600;color:var(--pine);letter-spacing:0;font-variant-numeric:tabular-nums;}
+.metric-value small{font-family:var(--font-display);font-size:0.875rem;color:var(--pine);margin-left:0.188rem;font-weight:500;}
+.metric-label{margin-top:0.625rem;font-family:var(--font-display);font-size:1.063rem;line-height:1.3;font-weight:600;color:var(--ink);letter-spacing:0;}
+.metric-desc{margin-top:0.312rem;color:var(--muted);font-size:0.812rem;line-height:1.7;font-weight:400;}
+
+/* ============ 滚动显现基础类 ============ */
+html.js .reveal{opacity:0;transform:translateY(1.750rem);transition:opacity .7s var(--ease-out),transform .7s var(--ease-out);}
+html.js .reveal.in{opacity:1;transform:none;}
+
+/* ============ 通用 Section ============ */
+.section{padding:5.750rem 0;border-bottom:1px solid var(--line);}
+.section.no-border{border-bottom:0;}
+.section-kicker{margin:0 0 0.875rem;color:var(--gold);font-weight:500;font-size:0.688rem;letter-spacing:.3em;text-transform:uppercase;}
+.section-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(17.500rem,26.875rem);gap:3.375rem;align-items:end;margin-bottom:2.375rem;}
+.section-title{
+  margin:0;
+  font-family:var(--font-display);
+  font-size:clamp(1.938rem,4vw,3.125rem);
+  line-height:1.22;
+  letter-spacing:0;
+  color:var(--pine);
+  font-weight:500;
+}
+.section-lede{margin:0;color:var(--muted);font-size:0.969rem;line-height:1.92;font-weight:400;}
+
+/* ============ 一眼看懂 ============ */
+/* ============ 画廊式展开：卡片基础 + ::before 深空背景 ============ */
+/* 深色渐变遮罩 + 径向光晕，模拟深空极客感 */
+/* 展开模式：未激活卡片淡出 */
+/* 文字在背景之上，因背景变深改白色 */
+.card-index{font-family:var(--font-en);font-style:italic;color:var(--gold-soft);font-size:1.500rem;}
+.module-card .card-title,.feature-card h3,.product-card h3{margin:0;color:var(--pine);font-family:var(--font-display);letter-spacing:0;}
+.card-link{margin-top:1.375rem;color:#fff;font-weight:500;font-size:0.750rem;letter-spacing:.14em;text-transform:uppercase;display:inline-flex;align-items:center;gap:0.500rem;}
+/* 跳动箭头：默认静止半透明，仅 hover 时跳动 */
+.card-link::after{
+  content:"→";
+  font-family:var(--font-en);
+  font-style:italic;
+  font-size:0.938rem;
+  line-height:1;
+  color:var(--gold-soft);
+  opacity:.5;
+  transition:opacity .25s ease;
+}
+.module-card:hover .card-link::after,
+.module-card.active .card-link::after{
+  opacity:1;
+  /* 有限次数（3 次）后停止，避免持续微动形成背景噪声 */
+  animation:arrowNudge .9s ease-in-out 3;
+}
+@keyframes arrowNudge{
+  0%,100%{transform:translateX(0);}
+  50%{transform:translateX(0.312rem);}
+}
+/* 原详情面板隐藏，内容由克隆体接管 */
+/* ============ 克隆展开面板（The Expandable Panel） ============ */
+.detail-points{margin:1.125rem 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:0.750rem;}
+.detail-points li{border-top:1px solid var(--line);padding-top:0.875rem;color:var(--muted);font-weight:400;font-size:0.812rem;line-height:1.68;}
+.detail-points strong{display:block;color:var(--pine);margin-bottom:0.312rem;font-size:0.812rem;font-weight:500;}
+
+/* ============ 产品模块 ============ */
+.module-video{margin:1.625rem 0 0;}
+.module-video-frame{
+  position:relative;
+  width:100%;
+  aspect-ratio:16/9;
+  background:#000;
+  border-radius:0.75rem;
+  overflow:hidden;
+}
+.module-video-frame video{width:100%;height:100%;display:block;object-fit:cover;}
+.module-video-placeholder{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:0.625rem;
+  background:linear-gradient(135deg,#0a3531,#164942);
+  color:#fff;
+}
+.module-video-label{
+  font-family:var(--font-en);
+  font-size:0.688rem;
+  font-weight:500;
+  letter-spacing:.3em;
+  text-transform:uppercase;
+  color:var(--gold-glow);
+}
+.module-video-hint{
+  font-family:var(--font-display);
+  font-size:1rem;
+  font-weight:400;
+  color:rgba(255,255,255,.7);
+}
+.module-default-view{
+  transition:opacity .34s var(--ease-out),transform .34s var(--ease-out),filter .34s var(--ease-out);
+  will-change:opacity,transform,filter;
+}
+.module-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1rem;
+}
+.module-section.module-transitioning .module-default-view{opacity:0;transform:translateY(-0.5rem);filter:blur(0.125rem);pointer-events:none;}
+.module-section.detail-mode .module-default-view{display:none;}
+.module-card{
+  min-height:13.250rem;
+  padding:0;
+  overflow:hidden;
+  cursor:pointer;
+  text-align:left;
+  display:flex;
+  flex-direction:column;
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:0.75rem;
+}
+.module-card:hover,.module-card.active{transform:translateY(-0.25rem);box-shadow:0 1.375rem 3.375rem rgba(15,38,34,.09);border-color:rgba(10,53,49,.26);background:#fff;}
+.module-card.firing{transform:translateY(-0.25rem) scale(1.006);box-shadow:0 1.625rem 3.750rem rgba(15,38,34,.12);border-color:rgba(10,53,49,.34);background:#fff;}
+.module-body{padding:1.375rem 1.375rem 1.500rem;display:flex;flex:1;flex-direction:column;}
+.module-meta{font-size:0.656rem;font-weight:500;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin-bottom:0.875rem;}
+.module-card .card-title{display:block;font-size:1.375rem;line-height:1.34;font-weight:500;}
+.module-card p{margin:0.750rem 0 0;color:var(--muted);font-size:0.812rem;line-height:1.78;font-weight:400;}
+.module-card .card-link{margin-top:auto;padding-top:1.125rem;}
+
+/* ============ 流光边缘：纯 CSS 玻璃态高光游走（@property + conic-gradient + mask） ============ */
+@property --glow-angle{
+  syntax:"<angle>";
+  initial-value:0deg;
+  inherits:false;
+}
+.module-card{position:relative;}
+.module-card::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  padding:1px;
+  background:conic-gradient(from var(--glow-angle),transparent 0%,var(--gold) 10%,var(--gold-glow) 18%,transparent 34%,transparent 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+          mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+          mask-composite:exclude;
+  opacity:0;
+  transition:opacity .35s ease;
+  pointer-events:none;
+  z-index:2;
+}
+/* hover：静态香槟金高光，不旋转（减少视线争夺） */
+.module-card:hover::after{opacity:1;}
+/* active（已展开）：旋转一圈强调当前选中，2 次后停止，不再永动 */
+.module-card.active::after{
+  opacity:1;
+  animation:glowSpin 3.2s linear 2;
+}
+@keyframes glowSpin{to{--glow-angle:360deg;}}
+/* 不支持 @property 的浏览器：光不旋转，但 hover 时静态高光仍显示（优雅降级） */
+
+.module-detail-stage{display:none;margin-top:0;opacity:0;transform:translateY(0.750rem);will-change:opacity,transform,filter;}
+.module-section.detail-mode .module-detail-stage{display:block;animation:moduleDetailIn .62s var(--ease-out) both;}
+.module-section.module-returning .module-detail-stage{display:block;animation:moduleDetailOut .28s ease both;}
+/* Sticky 返回按钮：长内容阅读时随时可退回 */
+.module-back{
+  position:sticky;
+  top:5.625rem;
+  z-index:6;
+  display:flex;
+  align-items:center;
+  gap:0.625rem;
+  width:max-content;
+  min-height:2.375rem;
+  margin:0 0 1.125rem auto;
+  padding:0 0.875rem;
+  border:1px solid var(--line);
+  border-radius:62.438rem;
+  background:#fff;
+  color:var(--pine);
+  cursor:pointer;
+  font-size:0.750rem;
+  font-weight:500;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  transition:transform .2s ease,border-color .2s ease,background .2s ease,box-shadow .2s ease;
+  box-shadow:0 0.375rem 1.125rem rgba(15,38,34,.06);
+}
+.module-back:hover{transform:translateY(-1px);border-color:rgba(10,53,49,.28);background:#fbf8f2;box-shadow:0 0.625rem 1.500rem rgba(15,38,34,.1);}
+.module-back .arrow{font-family:var(--font-en);font-size:1.250rem;font-style:italic;line-height:1;color:var(--gold);}
+.module-detail{
+  margin-top:0;
+  border:1px solid var(--line-strong);
+  background:#fff;
+  box-shadow:var(--shadow);
+  display:none;
+}
+.module-detail.open{display:block;animation:modulePanelIn .54s var(--ease-out) both;}
+@keyframes moduleDetailIn{
+  from{opacity:0;transform:translateY(0.875rem);filter:blur(0.125rem);}
+  to{opacity:1;transform:translateY(0);}
+}
+@keyframes moduleDetailOut{
+  from{opacity:1;transform:translateY(0);}
+  to{opacity:0;transform:translateY(0.5rem);filter:blur(0.125rem);}
+}
+@keyframes modulePanelIn{
+  from{opacity:0;transform:translateY(0.75rem) scale(.995);}
+  to{opacity:1;transform:translateY(0) scale(1);}
+}
+/* 模块展开采用 CSS 渐隐渐显方案（干净利落，避免 VT 截图崩塌）：
+   先淡出 grid（.module-transitioning），220ms 后 display 切换并淡入 stage（.detail-mode） */
+@media (prefers-reduced-motion:reduce){
+  .card-link::after{animation:none;}
+  .module-card::after{animation:none;}
+  .answer-points .point-icon path,
+  .answer-points .point-icon rect,
+  .answer-points .point-icon circle,
+  .answer-points .point-icon polyline{animation:none;stroke-dasharray:none;stroke-dashoffset:0;stroke:#c4a87a;}
+  .module-default-view{transition:none;}
+  .module-section.detail-mode .module-detail-stage,
+  .module-section.module-returning .module-detail-stage,
+  .module-detail.open{animation:none;}
+}
+.detail-header{
+  padding:1.875rem 2.125rem;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:1.500rem;
+  align-items:start;
+  border-bottom:1px solid var(--line);
+}
+.detail-header h3{margin:0;color:var(--pine);font-size:1.875rem;line-height:1.28;font-family:var(--font-display);font-weight:500;}
+.detail-header p{margin:0.625rem 0 0;color:var(--muted);font-weight:400;max-width:47.500rem;line-height:1.9;}
+.pill{display:inline-flex;align-items:center;min-height:2rem;padding:0 0.812rem;border:1px solid var(--line);border-radius:62.438rem;color:var(--pine);font-size:0.719rem;font-weight:500;background:#f8f5ee;white-space:nowrap;letter-spacing:.06em;}
+.detail-content{padding:1.875rem 2.125rem 2.125rem;}
+.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.875rem;}
+.feature-card{
+  padding:1.250rem;
+  min-height:10.750rem;
+}
+/* ============ 核心能力：顶部两列大卡 + 底行纯文字卡片 ============ */
+.feature-hero-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:0.875rem;
+  margin-bottom:0.875rem;
+}
+.feature-card--green{
+  padding:1.625rem 1.750rem;
+  min-height:auto;
+  background:#093d30;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:0.5rem;
+  display:flex;
+  flex-direction:column;
+}
+.feature-card--green h3{font-size:1.375rem;color:#fff;font-weight:500;line-height:1.36;}
+.feature-card.feature-card--green p{color:var(--gold-glow);font-size:0.875rem;line-height:1.86;margin:0.625rem 0 0;max-width:none;}
+.feature-card--green .feature-screenshot{
+  border-color:rgba(255,255,255,.18);
+}
+.feature-card--green .feature-screenshot img{max-height:none;object-fit:contain;}
+.feature-card h3{font-size:1.125rem;font-weight:500;line-height:1.36;}
+.feature-card p{margin:0.625rem 0 0;color:var(--muted);font-size:0.812rem;line-height:1.78;font-weight:400;}
+.feature-card strong{color:var(--pine);}
+.feature-screenshot{
+  margin:0.438rem -0.625rem -0.125rem;
+  border-radius:0.5rem;
+  overflow:hidden;
+  border:1px solid var(--line);
+}
+.feature-screenshot img{
+  display:block;
+  width:100%;
+  height:auto;
+  max-height:11rem;
+  object-fit:cover;
+  object-position:top;
+  cursor:zoom-in;
+  transition:opacity .2s ease;
+}
+.feature-screenshot img:hover{opacity:.85;}
+.wide-note{
+  margin-top:1.125rem;
+  padding:1.375rem 1.500rem;
+  background:var(--pine);
+  color:#fff;
+}
+.wide-note .tag{font-size:0.656rem;font-weight:500;letter-spacing:.24em;text-transform:uppercase;color:var(--gold-glow);margin-bottom:0.625rem;}
+.wide-note p{margin:0;color:rgba(255,255,255,.9);font-weight:400;line-height:1.86;}
+
+.detail-screenshots{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1.125rem;
+  margin-top:1.125rem;
+}
+.screenshot{
+  margin:0;
+  border-radius:0.625rem;
+  overflow:hidden;
+  background:var(--white);
+  border:1px solid var(--line);
+  box-shadow:0 0.375rem 1.125rem rgba(10,53,49,.06);
+  display:flex;
+  flex-direction:column;
+}
+.screenshot-label{
+  display:block;
+  padding:0.750rem 1rem 0;
+  font-size:0.750rem;
+  font-weight:500;
+  color:var(--pine);
+  letter-spacing:.04em;
+}
+.screenshot img{
+  display:block;
+  width:100%;
+  height:auto;
+  padding:0.625rem 0.875rem 0.875rem;
+  object-fit:contain;
+  cursor:zoom-in;
+  transition:opacity .2s ease;
+}
+.screenshot img:hover{opacity:.82;}
+
+.lightbox-overlay{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  background:rgba(10,53,49,.94);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .34s ease;
+}
+.lightbox-overlay.open{opacity:1;pointer-events:auto;}
+.lightbox-overlay img{
+  max-width:90vw;
+  max-height:88vh;
+  border-radius:0.625rem;
+  box-shadow:0 1.5rem 3.5rem rgba(0,0,0,.35);
+}
+.lightbox-close{
+  position:absolute;
+  inset-block-start:1.5rem;
+  inset-inline-end:1.5rem;
+  z-index:1001;
+  width:2.75rem;
+  height:2.75rem;
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:50%;
+  background:rgba(255,255,255,.08);
+  color:#fff;
+  font-size:1.5rem;
+  line-height:1;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background .2s ease,border-color .2s ease;
+}
+.lightbox-close:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.4);}
+
+/* ============ ScienceGroup ============ */
+.science-headline{max-width:55rem;margin:0 auto 2.750rem;text-align:center;}
+.science-headline .section-title{max-width:50rem;margin:0 auto;}
+.science-headline .section-lede{max-width:42.500rem;margin:1.250rem auto 0;}
+.science-criteria{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  align-items:stretch;
+  gap:0;
+}
+.criterion-card{padding:1.500rem 1.750rem;display:flex;flex-direction:column;border-right:1px solid var(--line);}
+.criterion-card:last-child{border-right:0;}
+.criterion-index{font-family:var(--font-en);font-style:italic;color:var(--gold);font-size:1.312rem;}
+.criterion-card h3{margin:0.750rem 0 0;color:var(--pine);font-family:var(--font-display);font-size:1.125rem;font-weight:500;line-height:1.36;}
+.criterion-card p{margin:0.562rem 0 0;color:var(--muted);font-size:0.812rem;line-height:1.78;font-weight:400;min-height:5.5rem;}
+/* 一眼看懂要点列表：图标在左侧，标题+简介整体在右侧 */
+.answer-points{margin:1rem 0 0;padding:1rem 1.25rem;list-style:none;background:#fff;border:1px solid var(--line);border-radius:0.75rem;flex-grow:1;display:flex;flex-direction:column;justify-content:flex-start;}
+.answer-points li{padding:0.5rem 0;margin-bottom:0;display:flex;align-items:flex-start;gap:0.75rem;}
+.answer-points li:not(:first-child){border-top:1px solid var(--line);}
+.answer-points li:last-child{margin-bottom:0;}
+.answer-points .point-icon{flex-shrink:0;width:2.25rem;height:2.25rem;}
+/* 线条内部光影：走一圈后完整呈现，不重复 */
+.answer-points .point-icon path,
+.answer-points .point-icon rect,
+.answer-points .point-icon circle,
+.answer-points .point-icon polyline{stroke:url(#iconGlow);stroke-dasharray:200;stroke-dashoffset:200;animation:iconFlow 2.5s ease-out forwards;}
+@keyframes iconFlow{to{stroke-dashoffset:0;}}
+.answer-points .point-text{flex:1;}
+.answer-points strong{display:block;color:var(--pine);font-size:0.85rem;font-weight:500;margin-bottom:0.25rem;}
+.answer-points span{display:block;color:var(--muted);font-size:0.78rem;line-height:1.6;}
+.scene-list{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:2.125rem;border:1px solid var(--line);background:#fff;}
+.scene-type{padding:1.750rem 1.625rem 1.875rem;background:#fff;border:0;border-right:1px solid var(--line);min-height:18.250rem;}
+.scene-type:last-child{border-right:0;}
+.scene-head{display:block;}
+.scene-num{display:block;color:var(--gold);font-family:var(--font-en);font-style:italic;font-size:1.500rem;line-height:1;}
+.scene-name{display:block;margin-top:1.375rem;font-family:var(--font-display);font-weight:500;color:var(--pine);font-size:1.250rem;line-height:1.34;}
+.scene-desc{display:block;margin-top:0.500rem;color:var(--muted);font-size:0.750rem;font-weight:400;letter-spacing:.08em;}
+.scene-body{display:block;padding:0;margin-top:1.375rem;}
+.scene-copy{margin:0;color:var(--muted);font-size:0.812rem;line-height:1.82;font-weight:400;}
+.scene-examples{display:flex;flex-wrap:wrap;gap:0.500rem;margin-top:1.125rem;}
+.scene-examples span{display:inline-flex;align-items:center;min-height:1.750rem;padding:0 0.625rem;border:1px solid var(--line);border-radius:62.438rem;color:var(--pine);font-size:0.719rem;font-weight:400;background:#fbf8f2;}
+
+.product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.875rem;}
+.product-card{padding:1.375rem;background:#fff;min-height:11.125rem;}
+.product-card h3{font-size:1.250rem;margin-top:0.562rem;font-weight:500;line-height:1.32;}
+.product-card p{margin:0.625rem 0 0;color:var(--muted);font-size:0.812rem;line-height:1.76;font-weight:400;}
+.product-tag{color:var(--gold);font-size:0.656rem;font-weight:500;letter-spacing:.24em;text-transform:uppercase;}
+
+/* ============ 成果与信任 Trust / Proof ============ */
+.trust-section{background:linear-gradient(180deg,#fbf8f2 0%,#f4efe4 100%);}
+.trust-headline{max-width:52rem;margin:0 auto 2.5rem;text-align:center;}
+.trust-headline .section-title{max-width:46rem;margin:0 auto;}
+.trust-headline .section-lede{max-width:40rem;margin:1.25rem auto 0;}
+.trust-lead{
+  display:grid;
+  grid-template-columns:minmax(0,15rem) minmax(0,1fr);
+  gap:2.25rem;
+  align-items:center;
+  padding:2rem 2.25rem;
+  background:var(--pine);
+  color:#fff;
+  border-radius:0.75rem;
+  box-shadow:var(--shadow);
+}
+.trust-lead-figure{text-align:center;}
+.trust-lead-num{font-family:var(--font-display);font-size:clamp(3rem,7vw,4.5rem);font-weight:700;line-height:1;color:var(--gold-glow);font-variant-numeric:tabular-nums;}
+.trust-lead-num small{font-size:1.25rem;margin-left:0.25rem;font-weight:500;}
+.trust-lead-cap{margin-top:0.5rem;font-family:var(--font-en);font-size:0.688rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.7);}
+.trust-lead-copy p{margin:0;color:rgba(255,255,255,.9);font-family:var(--font-display);font-size:clamp(1rem,1.8vw,1.25rem);line-height:1.8;font-weight:400;}
+.trust-venues{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1.125rem;}
+.trust-venues span{display:inline-flex;align-items:center;min-height:1.875rem;padding:0 0.812rem;border:1px solid rgba(255,255,255,.24);border-radius:62.438rem;color:#fff;font-family:var(--font-en);font-size:0.75rem;font-weight:500;letter-spacing:.08em;background:rgba(255,255,255,.05);}
+.trust-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:0.875rem;margin-top:0.875rem;}
+.trust-card{padding:1.5rem 1.625rem;background:#fff;border:1px solid var(--line);border-radius:0.75rem;}
+.trust-card .trust-quote{margin:0;color:var(--ink);font-family:var(--font-display);font-size:1rem;line-height:1.7;font-weight:400;}
+.trust-card .trust-quote::before{content:"“";font-family:var(--font-en);color:var(--gold);font-size:1.5rem;margin-right:0.125rem;line-height:0;}
+.trust-card .trust-by{margin:1rem 0 0;color:var(--quiet);font-size:0.75rem;font-weight:500;letter-spacing:.04em;}
+@media (max-width:40rem){
+  .trust-lead{grid-template-columns:1fr;gap:1.25rem;text-align:center;padding:1.75rem 1.5rem;}
+  .trust-venues{justify-content:center;}
+  .trust-cards{grid-template-columns:1fr;}
+}
+
+/* ============ Proof：查看全部录用论文入口 + 竖向滚动长图弹窗 ============ */
+.proof-more{margin-top:1.375rem;text-align:center;}
+.proof-more-link{
+  display:inline-flex;
+  align-items:center;
+  gap:0.5rem;
+  min-height:2.5rem;
+  padding:0 1.5rem;
+  border:1px solid var(--line-strong);
+  border-radius:62.438rem;
+  background:#fff;
+  color:var(--pine);
+  font-size:0.812rem;
+  font-weight:500;
+  letter-spacing:.06em;
+  cursor:pointer;
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease;
+  box-shadow:0 0.375rem 1.125rem rgba(15,38,34,.06);
+}
+.proof-more-link:hover{transform:translateY(-2px);box-shadow:0 0.625rem 1.500rem rgba(15,38,34,.1);border-color:rgba(10,53,49,.28);background:#fbf8f2;}
+.proof-more-link:active{transform:translateY(0) scale(.98);}
+.proof-more-link .arrow{font-family:var(--font-en);font-style:italic;color:var(--gold);font-size:1rem;line-height:1;}
+
+/* 录用论文弹窗：比联系弹窗更大，承载一张可竖向滚动的成品长图 */
+.papers-modal-overlay{
+  position:fixed;
+  inset:0;
+  z-index:1100;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:1.5rem;
+  background:rgba(10,53,49,.5);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .38s var(--ease-out);
+}
+.papers-modal-overlay.open{opacity:1;pointer-events:auto;}
+.papers-modal{
+  position:relative;
+  width:min(64rem,100%);
+  height:min(82vh,48rem);
+  display:flex;
+  flex-direction:column;
+  background:var(--paper);
+  border-radius:0.75rem;
+  overflow:hidden;
+  box-shadow:0 2rem 5rem rgba(10,53,49,.28);
+  transform:translateY(1rem) scale(.985);
+  transition:opacity .38s var(--ease-out),transform .38s var(--ease-out);
+  opacity:0;
+}
+.papers-modal-overlay.open .papers-modal{opacity:1;transform:translateY(0) scale(1);}
+.papers-modal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  padding:0.875rem 1rem 0.875rem 1.375rem;
+  border-bottom:1px solid var(--line);
+  background:#fff;
+}
+.papers-modal-title{display:flex;flex-direction:column;gap:0.125rem;min-width:0;}
+.papers-modal-title strong{color:var(--pine);font-family:var(--font-display);font-size:1rem;font-weight:600;line-height:1.2;}
+.papers-modal-title span{color:var(--quiet);font-family:var(--font-en);font-size:0.688rem;letter-spacing:.06em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.papers-modal-actions{display:flex;align-items:center;gap:0.5rem;flex-shrink:0;}
+.papers-modal-open{
+  display:inline-flex;
+  align-items:center;
+  gap:0.375rem;
+  min-height:2rem;
+  padding:0 0.812rem;
+  border:1px solid var(--line);
+  border-radius:62.438rem;
+  color:var(--pine);
+  font-size:0.719rem;
+  font-weight:500;
+  letter-spacing:.04em;
+  background:#fbf8f2;
+  transition:border-color .2s ease,background .2s ease;
+}
+.papers-modal-open:hover{border-color:rgba(10,53,49,.28);background:#f4efe4;}
+.papers-modal-close{
+  width:2.25rem;
+  height:2.25rem;
+  border:0;
+  border-radius:50%;
+  background:var(--pine);
+  color:#fff;
+  font-size:1.25rem;
+  line-height:1;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background .2s ease;
+}
+.papers-modal-close:hover{background:var(--pine-2);}
+/* 竖向滚动长图容器：约束高度 + 纵向滚动，图片宽度铺满、高度自适应 */
+.papers-modal-body{
+  position:relative;
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  background:#f4efe4;
+  -webkit-overflow-scrolling:touch;   /* iOS 惯性滚动 */
+  scroll-behavior:smooth;
+}
+.papers-modal-figure{margin:0;padding:0;line-height:0;}
+.papers-modal-figure img{
+  display:block;
+  width:100%;
+  height:auto;                 /* 高度随长图自适应，形成竖向滚动 */
+  border:0;
+}
+/* 滚动条美化（webkit），保留轻微存在感提示"可滚动" */
+.papers-modal-body::-webkit-scrollbar{width:0.5rem;}
+.papers-modal-body::-webkit-scrollbar-thumb{background:rgba(10,53,49,.28);border-radius:62.438rem;}
+.papers-modal-body::-webkit-scrollbar-track{background:transparent;}
+/* 底部滚动提示胶囊：暗示下方还有内容 */
+.papers-scroll-hint{
+  position:absolute;
+  left:50%;
+  bottom:0.75rem;
+  transform:translateX(-50%);
+  z-index:3;
+  display:inline-flex;
+  align-items:center;
+  gap:0.375rem;
+  padding:0.25rem 0.75rem;
+  border-radius:62.438rem;
+  background:rgba(10,53,49,.82);
+  color:#fff;
+  font-size:0.688rem;
+  letter-spacing:.06em;
+  pointer-events:none;
+  transition:opacity .3s ease;
+}
+.papers-scroll-hint .chev{animation:hintBob 1.4s ease-in-out infinite;}
+@keyframes hintBob{0%,100%{transform:translateY(0);}50%{transform:translateY(0.1875rem);}}
+.papers-scroll-hint.hidden{opacity:0;}
+@media (prefers-reduced-motion:reduce){
+  .papers-scroll-hint .chev{animation:none;}
+  .papers-modal-body{scroll-behavior:auto;}
+  .papers-modal{transition:opacity .2s ease;transform:none;}
+}
+@media (max-width:40rem){
+  .papers-modal-overlay{padding:0.75rem;}
+  .papers-modal{height:88vh;}
+  .papers-modal-title span{display:none;}
+}
+
+/* ============ feature-card 图标（P2-10） ============ */
+.feature-card .fc-icon{width:1.75rem;height:1.75rem;color:var(--gold);margin-bottom:0.625rem;display:block;}
+.feature-card .fc-icon path,.feature-card .fc-icon rect,.feature-card .fc-icon circle,.feature-card .fc-icon line,.feature-card .fc-icon polyline{stroke:var(--gold);}
+
+/* ============ 联系我们 ============ */
+.contact-section{
+  text-align:center;
+  background:var(--pine);
+  color:#fff;
+  border-bottom:0;
+  padding:5.750rem 0;
+}
+.contact-closing{max-width:40rem;margin:0 auto;}
+.contact-section .brand-mark{
+  display:block;
+  color:#fff;
+  font-size:1.625rem;
+}
+.contact-belief{
+  margin:1rem auto 0;
+  color:rgba(255,255,255,.72);
+  font-size:0.969rem;
+  line-height:1.88;
+  font-weight:400;
+}
+.contact-actions{display:flex;justify-content:center;gap:0.875rem;flex-wrap:wrap;margin-top:1.875rem;}
+.contact-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:2.75rem;
+  padding:0 2rem;
+  border:1px solid var(--line);
+  border-radius:62.438rem;
+  background:#fff;
+  color:var(--pine);
+  font-family:var(--font-body);
+  font-size:0.875rem;
+  font-weight:500;
+  letter-spacing:.06em;
+  cursor:pointer;
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+  box-shadow:0 0.375rem 1.125rem rgba(15,38,34,.06);
+}
+.contact-section .contact-pill:first-child{
+  background:#fff;
+  color:var(--pine);
+  border-color:rgba(255,255,255,.92);
+  box-shadow:0 0.875rem 2.25rem rgba(0,0,0,.16);
+}
+.contact-section .contact-pill:last-child{
+  background:rgba(255,255,255,.06);
+  color:#fff;
+  border-color:rgba(255,255,255,.28);
+  box-shadow:none;
+}
+.contact-pill:hover{transform:translateY(-2px);box-shadow:0 0.625rem 1.500rem rgba(15,38,34,.1);border-color:rgba(10,53,49,.28);}
+.contact-section .contact-pill:hover{border-color:rgba(255,255,255,.5);box-shadow:0 0.875rem 2.25rem rgba(0,0,0,.18);}
+.contact-section .contact-pill:last-child:hover{background:rgba(255,255,255,.1);box-shadow:none;}
+.contact-pill:active{transform:translateY(0) scale(.98);}
+
+/* ============ 联系我们弹窗 ============ */
+.contact-modal-overlay{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(10,53,49,.45);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .42s var(--ease-out);
+}
+.contact-modal-overlay.open{opacity:1;pointer-events:auto;}
+.contact-modal{
+  position:relative;
+  width:min(32rem,calc(100% - 2rem));
+  background:var(--paper);
+  border-radius:0.75rem;
+  overflow:hidden;
+  box-shadow:0 2rem 5rem rgba(10,53,49,.18);
+  opacity:0;
+  transform:translateY(1rem) scale(.985);
+  transition:opacity .42s var(--ease-out),transform .42s var(--ease-out);
+}
+.contact-modal-overlay.open .contact-modal{opacity:1;transform:translateY(0) scale(1);}
+.contact-modal-close{
+  position:absolute;
+  top:1rem;
+  right:1rem;
+  width:2.5rem;
+  height:2.5rem;
+  border:0;
+  border-radius:50%;
+  background:var(--pine);
+  color:#fff;
+  font-size:1.25rem;
+  line-height:1;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:10;
+  transition:background .2s ease;
+}
+.contact-modal-close:hover{background:var(--pine-2);}
+.contact-modal-head{padding:2.5rem 2.5rem 1.5rem;text-align:center;}
+.contact-modal-head .section-kicker{margin:0 0 .875rem;color:var(--gold);font-weight:500;font-size:.688rem;letter-spacing:.3em;text-transform:uppercase;}
+.contact-modal-head h2{margin:0;font-family:var(--font-display);font-size:1.75rem;font-weight:700;color:var(--pine);line-height:1.22;}
+.contact-modal-head p{margin:.625rem 0 0;color:var(--muted);font-size:.875rem;line-height:1.6;}
+.contact-form{padding:0 2.5rem 2.5rem;}
+.contact-field{margin-bottom:1.125rem;}
+.contact-field label{display:block;margin-bottom:.375rem;color:var(--pine);font-size:.75rem;font-weight:500;letter-spacing:.06em;}
+.contact-field input,.contact-field textarea{
+  width:100%;
+  padding:.625rem .875rem;
+  border:1px solid var(--line);
+  border-radius:.375rem;
+  background:#fff;
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:.875rem;
+  line-height:1.6;
+  transition:border-color .2s ease;
+}
+.contact-field input:focus,.contact-field textarea:focus{outline:0;border-color:var(--gold);}
+.contact-field textarea{resize:vertical;min-height:4.5rem;}
+.contact-submit{width:100%;margin-top:.5rem;}
+
+@media (max-width:61.250rem){
+  .container{width:min(100% - 2rem,47.500rem);}
+  .nav-links{display:none;}
+  .hero{height:auto;min-height:47.500rem;padding-top:7.375rem;}
+  .hero-content{width:100%;}
+  /* 平板：星图标签稍收 */
+  .smap-leaf{font-size:0.74rem;}
+  .metric-strip{margin-top:0;padding-top:1.625rem;background:var(--paper);}
+  .metrics{grid-template-columns:repeat(2,1fr);}
+  .metric:nth-child(2){border-right:0;}
+  .metric:nth-child(1),.metric:nth-child(2){border-bottom:1px solid var(--line);}
+  .section-head{grid-template-columns:1fr;gap:1.125rem;}
+  /* 一眼看懂 + ScienceGroup：平板端改单列纵向堆叠，文字不再拉长 */
+  .science-criteria{grid-template-columns:1fr;}
+  .criterion-card{border-right:0;border-bottom:1px solid var(--line);}
+  .criterion-card:last-child{border-bottom:0;}
+  .scene-list{grid-template-columns:repeat(2,1fr);}
+  .scene-type:nth-child(2n){border-right:0;}
+  .scene-type:nth-child(-n+2){border-bottom:1px solid var(--line);}
+  /* 产品模块：平板端 2 列 */
+  .module-grid{grid-template-columns:repeat(2,1fr);}
+  /* 产品生态：平板端 2 列 */
+  .eco-grid{grid-template-columns:repeat(2,1fr);}
+  .module-back{top:5rem;}
+  .detail-screenshots{grid-template-columns:repeat(2,1fr);}
+  .feature-hero-row{grid-template-columns:1fr;}
+}
+.module-detail[data-module-panel="0"] .detail-content{padding-top:0.938rem;}
+
+@media (max-width:40rem){
+  body{font-size:0.875rem;}
+  .container{width:calc(100% - 1.750rem);}
+  .nav{height:4rem;}
+  .brand-sub{display:none;}
+  .hero{min-height:0;padding:6.500rem 0 3.500rem;}
+  h1{font-size:clamp(2.35rem,12vw,3.25rem);line-height:1.16;}
+  .hero-title-accent{font-size:1.125rem;line-height:1.46;}
+  .hero-lede{max-width:100%;font-size:0.875rem;line-height:1.86;margin-top:1.125rem;}
+  .hero-actions{align-items:center;justify-content:center;}
+  .btn{width:auto;min-width:8.75rem;}
+  /* 手机：保留第三层信息，叶子词加暗底提升对比度 */
+  .smap-leaf{display:block;font-size:0.62rem;color:rgba(236,217,180,.84);padding:0.1rem 0.35rem;background:rgba(9,12,38,.6);backdrop-filter:blur(0.25rem);-webkit-backdrop-filter:blur(0.25rem);border-radius:0.18rem;}
+  .smap-hub{font-size:0.95rem;}
+  .starmap-lead-line{font-size:1.2rem;}
+  .metrics{grid-template-columns:1fr;}
+  .metric{border-right:0;border-bottom:1px solid var(--line);}
+  .metric:nth-child(1),.metric:nth-child(2){border-bottom:1px solid var(--line);}
+  .metric:last-child{border-bottom:0;}
+  .module-grid,.feature-grid,.eco-grid{grid-template-columns:1fr;}
+  .section{padding:4.250rem 0;}
+  .detail-header{grid-template-columns:1fr;padding:1.500rem;}
+  .detail-content{padding:1.500rem;}
+  .science-headline{text-align:left;margin-bottom:2.125rem;}
+  .science-headline .section-lede{margin-left:0;margin-right:0;}
+  .scene-list{grid-template-columns:1fr;}
+  .scene-type{border-right:0;border-bottom:1px solid var(--line);min-height:0;}
+  .scene-type:nth-child(-n+2){border-bottom:1px solid var(--line);}
+  .scene-type:last-child{border-bottom:0;}
+  /* 手机端：描述不再强制等高，让内容自然流动 */
+  .criterion-card p{min-height:0;}
+  .detail-screenshots{grid-template-columns:1fr;}
+}
+
+/* ============ Pricing ============ */
+.pricing-section{
+  background:linear-gradient(180deg,#f6f1e8 0%,#fbf8f2 100%);
+}
+.pricing-card{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:1rem;
+  margin:0 auto;
+  padding:1.5rem 1.75rem;
+  max-width:58rem;
+  border:1px solid rgba(169,128,76,.28);
+  background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(251,248,242,.88));
+  color:var(--pine);
+  text-align:center;
+}
+.pricing-label{
+  color:var(--gold);
+  font-size:0.656rem;
+  font-weight:500;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.pricing-card strong{
+  font-family:var(--font-display);
+  font-size:clamp(1rem,1.5vw,1.25rem);
+  line-height:1.7;
+  font-weight:500;
+  letter-spacing:0;
+}
+
+/* ============ 产品生态弹窗 ============ */
+.eco-default-view{
+  transition:opacity .34s var(--ease-out),transform .34s var(--ease-out),filter .34s var(--ease-out);
+  will-change:opacity,transform,filter;
+}
+.eco-section.eco-transitioning .eco-default-view{opacity:0;transform:translateY(-0.5rem);filter:blur(0.125rem);pointer-events:none;}
+.eco-section.detail-mode .eco-default-view{display:none;}
+.eco-detail-stage{display:none;margin-top:0;opacity:0;transform:translateY(0.750rem);}
+.eco-section.detail-mode .eco-detail-stage{display:block;animation:moduleDetailIn .62s var(--ease-out) both;}
+.eco-section.eco-returning .eco-detail-stage{display:block;animation:moduleDetailOut .28s ease both;}
+.eco-back{margin-bottom:1.125rem;}
+.eco-detail-video{margin-bottom:1.5rem;}
+.eco-detail-conditions,.eco-detail-scenes{margin-top:2.25rem;}
+.eco-detail-section-title{
+  margin:0 0 1.25rem;
+  font-family:var(--font-display);
+  font-size:1.125rem;
+  font-weight:600;
+  color:var(--pine);
+  line-height:1.32;
+}
+.eco-detail-conditions .science-criteria,
+.eco-detail-scenes .scene-list{margin-top:0;}
+.eco-detail-conditions .criterion-card,
+.eco-detail-scenes .scene-type{background:#fff;}
+.eco-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:2rem;
+  padding:0 1.25rem;
+  border:0;
+  border-radius:62.438rem;
+  background:var(--pine);
+  color:#fff;
+  font-family:var(--font-body);
+  font-size:0.75rem;
+  font-weight:500;
+  letter-spacing:.06em;
+  cursor:pointer;
+  transition:background .25s ease,transform .2s ease;
+  margin-top:1.25rem;
+}
+.eco-pill:hover{background:var(--pine-2);transform:translateY(-2px);}
+.eco-pill:active{transform:translateY(0) scale(.98);}
+@media (prefers-reduced-motion:reduce){
+  .eco-default-view{transition:none;}
+  .eco-section.detail-mode .eco-detail-stage,
+  .eco-section.eco-returning .eco-detail-stage,
+  .eco-detail.open{animation:none;}
+}
+.eco-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:0;
+  border-top:1px solid var(--line);
+  border-left:1px solid var(--line);
+}
+.eco-item{
+  padding:1.750rem 1.625rem;
+  border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+}
+.eco-item h3{margin:0.562rem 0 0;color:var(--pine);font-family:var(--font-display);font-size:1.250rem;font-weight:600;line-height:1.32;}
+/* 术语人话注解：紧跟在产品名后，弱化字重与字号 */
+.eco-item h3 .eco-note{display:block;margin-top:0.25rem;font-family:var(--font-body);font-size:0.719rem;font-weight:400;letter-spacing:.02em;color:var(--quiet);}
+/* 锚点卡：标识"你正在了解的核心产品"，不参与下钻 */
+.eco-item p{margin:0.625rem 0 0;color:var(--muted);font-size:0.812rem;line-height:1.76;font-weight:400;}
+.eco-tag{color:var(--gold);font-size:0.656rem;font-weight:500;letter-spacing:.24em;text-transform:uppercase;}
+@media (max-width:40rem){
+  .pricing-card{align-items:flex-start;flex-direction:column;text-align:left;gap:0.625rem;}
+  .metric{border-right:0;border-bottom:1px solid var(--line);}
+  .metric:nth-child(1),.metric:nth-child(2){border-bottom:1px solid var(--line);}
+  .metric:last-child{border-bottom:0;}
+}
+</style>
+</head>
+<body>
+<!-- 全局 SVG 渐变定义：香槟金光影 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="iconGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c4a87a"/>
+      <stop offset="35%" stop-color="#d4be94"/>
+      <stop offset="50%" stop-color="#e8d5af"/>
+      <stop offset="65%" stop-color="#d4be94"/>
+      <stop offset="100%" stop-color="#c4a87a"/>
+    </linearGradient>
+  </defs>
+</svg>
+<div class="page">
+  <nav class="nav" aria-label="主导航">
+    <div class="container nav-inner">
+      <a class="brand" href="#top" aria-label="PaperGuru IDE 首页">
+        <span class="brand-mark">PaperGuru<span class="dot">.</span></span>
+        <span class="brand-sub">Desktop Research Agent</span>
+      </a>
+      <div class="nav-links">
+        <a href="#answers">Overview</a>
+        <a href="#modules">Modules</a>
+        <a href="#proof">Proof</a>
+        <a href="#ecosystem">Ecosystem</a>
+        <a href="#contact">paperguru.ai</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero hero-stage" id="top" data-hero>
+    <!-- 第一幕：科研人的声音 · 动态知识星图 -->
+    <div class="starmap" aria-hidden="true">
+      <!-- 开场金色引导语：所有元素最前，先单独出现→淡出→再走星图 -->
+      <div class="starmap-lead" id="starmap-lead">
+        <p class="eyebrow starmap-eyebrow">Voice of the Researcher</p>
+        <p class="starmap-lead-line">从文献搜索到投稿，科研对 AI 工具的要求是<em>多维</em>的</p>
+      </div>
+      <!-- Three.js 3D 场景画布：星尘 / 节点 / 连线 -->
+      <canvas class="starmap-canvas" id="starmap-canvas"></canvas>
+      <!-- DOM 标签层：节点文字投影到此层，保证清晰可读（JS 每帧更新位置） -->
+      <div class="starmap-labels" id="starmap-labels"></div>
+    </div>
+
+    <!-- 第二幕：产品介绍（星图淡出后浮现） -->
+    <div class="container hero-intro-wrap">
+      <div class="hero-content hero-intro">
+        <p class="eyebrow seq">PaperGuru IDE · Beta</p>
+        <h1>
+          <span class="hero-title-main seq">从灵感到中稿</span>
+          <span class="hero-title-accent seq">为科研而生的桌面智能体</span>
+        </h1>
+        <div class="hero-actions seq">
+          <button class="btn primary" type="button" data-contact-open>点击下载</button>
+          <a class="btn" href="#modules">Overview</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="metric-strip" aria-label="关键数字">
+    <div class="container">
+      <div class="metrics" data-stagger>
+        <div class="metric reveal">
+          <div class="metric-value" data-count="22" data-suffix="篇">0<small>篇</small></div>
+          <div class="metric-label">顶会顶刊录用</div>
+          <div class="metric-desc">已辅助多名用户科研工作获得接收</div>
+        </div>
+        <div class="metric reveal">
+          <div class="metric-value">桌面端</div>
+          <div class="metric-label">科研主工作台</div>
+          <div class="metric-desc">本地文件、浏览器、录屏与远程算力协同</div>
+        </div>
+        <div class="metric reveal">
+          <div class="metric-value">自主实验</div>
+          <div class="metric-label">长程执行流程</div>
+          <div class="metric-desc">从环境搭建到全量验证的长程执行</div>
+        </div>
+        <div class="metric reveal">
+          <div class="metric-value">课题组</div>
+          <div class="metric-label">企业版服务</div>
+          <div class="metric-desc">面向实验室的自动化科研环境</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section class="section" id="answers">
+      <div class="container">
+        <div class="science-headline reveal">
+          <p class="section-kicker">Overview</p>
+          <h2 class="section-title">从想法到结果交付</h2>
+          <p class="section-lede">不止于对话。一个持续运行、稳定交付成果的桌面工作台。</p>
+        </div>
+
+        <div class="science-criteria" aria-label="一眼看懂" data-stagger>
+          <div class="criterion-card reveal">
+            <span class="criterion-index">01</span>
+            <h3>它是什么？</h3>
+            <p>一个安装在本地电脑上的科研工作台。项目、文献、代码和实验进程集中管理，不再分散在多个窗口之间。</p>
+            <ul class="answer-points">
+              <li><svg class="point-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 6h6M5 8.5h6M5 11h3.5"/></svg><div class="point-text"><strong>统一入口</strong><span>项目、会话、文件与实验进程集中管理。</span></div></li>
+              <li><svg class="point-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13V4.5L8 2l5 2.5V13"/><path d="M3 13h10M6 7h4M6 9.5h4"/></svg><div class="point-text"><strong>科研导向</strong><span>能力围绕论文、图表、实验和模型验证展开。</span></div></li>
+            </ul>
+          </div>
+          <div class="criterion-card reveal">
+            <span class="criterion-index">02</span>
+            <h3>它解决什么？</h3>
+            <p>你描述需求，它完成执行。把画图、配环境、跑代码和整理结果这些环节串成一条可复用的流程。</p>
+            <ul class="answer-points">
+              <li><svg class="point-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12.5L8 3l5.5 9.5z"/><path d="M8 7v2.5"/></svg><div class="point-text"><strong>图表生产</strong><span>参考顶会论文风格重绘架构图与统计图。</span></div></li>
+              <li><svg class="point-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 4L2.5 8l2 4M11.5 4l2 4-2 4"/><path d="M6 11l4-6"/></svg><div class="point-text"><strong>实验执行</strong><span>自动配置环境、运行代码、追踪任务进展。</span></div></li>
+            </ul>
+          </div>
+          <div class="criterion-card reveal">
+            <span class="criterion-index">03</span>
+            <h3>为什么是桌面端？</h3>
+            <p>只有桌面端能直接读写本地文件、连接远程服务器、在实验过程中实时监控屏幕——网页应用受限于浏览器沙箱，无法做到这些。</p>
+            <ul class="answer-points">
+              <li><svg class="point-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 5.5h6v5h-6z"/><path d="M8.5 7.5h3l2 2v1h-5z"/><circle cx="5" cy="11.5" r="1"/><circle cx="11" cy="11.5" r="1"/></svg><div class="point-text"><strong>本地协作</strong><span>paper / chat / lab 工作目录共享文件。</span></div></li>
+              <li><svg class="point-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="12" height="8" rx="1"/><path d="M5 4v8M11 4v8M2 8h12"/></svg><div class="point-text"><strong>硬件接入</strong><span>连接云端 GPU、校园网服务器或官方 Lab 面板。</span></div></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section module-section" id="modules">
+      <div class="container">
+        <div class="science-headline reveal">
+          <p class="section-kicker">Modules</p>
+          <h2 class="section-title">核心模块与执行能力</h2>
+          <p class="section-lede">从产品概览、核心能力到自主实验，点开任意模块，逐层看清它能为你做什么。</p>
+        </div>
+
+        <div class="module-default-view">
+          <div class="module-grid" aria-label="产品模块" data-stagger>
+          <button class="module-card reveal" data-module="0" type="button" aria-expanded="false">
+            <span class="module-body">
+              <span class="module-meta">01 · Overview</span>
+              <span class="card-title">产品概览</span>
+              <p>项目、模型、API 与执行进程，形成连续工作流。</p>
+              <span class="card-link">展开模块</span>
+            </span>
+          </button>
+          <button class="module-card reveal" data-module="1" type="button" aria-expanded="false">
+            <span class="module-body">
+              <span class="module-meta">02 · Capability</span>
+              <span class="card-title">核心能力</span>
+              <p>论文级绘图、远程算力、长上下文与自动编码。</p>
+              <span class="card-link">展开模块</span>
+            </span>
+          </button>
+          <button class="module-card reveal" data-module="2" type="button" aria-expanded="false">
+            <span class="module-body">
+              <span class="module-meta">03 · Autonomous</span>
+              <span class="card-title">RSR 自主实验<span style="display:block;font-family:var(--font-body);font-size:0.688rem;font-weight:400;letter-spacing:.04em;color:var(--quiet);margin-top:0.25rem;">个人桌面端的长程执行能力</span></span>
+              <p>连接算力、搭建环境、运行实验并追踪结果。</p>
+              <span class="card-link">展开模块</span>
+            </span>
+          </button>
+        </div>
+          <div class="module-video reveal" aria-label="产品讲解视频">
+            <div class="module-video-frame">
+              <video controls preload="metadata" playsinline>
+                <source src="./IDE端绘图演示-1.mp4" type="video/mp4">
+                您的浏览器暂不支持视频播放。
+              </video>
+            </div>
+          </div>
+        </div>
+
+        <div class="module-detail-stage">
+          <button class="module-back" type="button">
+            <span class="arrow" aria-hidden="true">←</span>
+            返回模块目录
+          </button>
+
+        <article class="module-detail" data-module-panel="0">
+          <div class="detail-header">
+            <div>
+              <h3>产品概览</h3>
+              <p>围绕科研项目组织界面、会话、模型和 API；从输入目标到生成结果，过程保持连续。</p>
+            </div>
+            <span class="pill">Beta 版开放体验</span>
+          </div>
+          <div class="detail-content">
+            <div class="feature-grid">
+              <div class="feature-card">
+                <h3>从目标到结果保持连续</h3>
+                <p>项目、会话、文件和命令按研究任务组织，执行进展与结果交付沿同一条线索推进。</p>
+              </div>
+              <div class="feature-card">
+                <h3>按任务选择模型</h3>
+                <p>Master / Prime / Standard 多档能力覆盖文本、图像和视频任务，让不同复杂度的研究工作各得其所。</p>
+              </div>
+              <div class="feature-card">
+                <h3>Playground 连接真实实验</h3>
+                <p>预留仿真、机器人和湿实验接口，用于把可验证流程接入桌面端。</p>
+              </div>
+            </div>
+            <div class="detail-screenshots">
+              <figure class="screenshot">
+                <img src="产品界面介绍/paper-panel.jpg" alt="PaperGuru 论文面板" loading="lazy" class="screenshot-img">
+              </figure>
+              <figure class="screenshot">
+                <img src="产品界面介绍/model-selector.png" alt="模型选择器" loading="lazy" class="screenshot-img">
+              </figure>
+              <figure class="screenshot">
+                <img src="产品界面介绍/playground-panel.jpg" alt="Playground 面板" loading="lazy" class="screenshot-img">
+              </figure>
+            </div>
+            <div class="wide-note">
+              <div class="tag">Workspace Logic</div>
+              <p>从输入目标到生成结果，过程保持连续、可追踪、可复用。</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="module-detail" data-module-panel="1">
+          <div class="detail-header">
+            <div>
+              <h3>核心能力</h3>
+              <p>聚焦绘图与需求整理，结合代码生成与长上下文能力，让具体任务直接进入可执行状态。</p>
+            </div>
+            <span class="pill">科研生产力核心</span>
+          </div>
+          <div class="detail-content">
+            <div class="feature-hero-row">
+              <div class="feature-card feature-card--green">
+                <h3>论文级绘图，不再熬夜</h3>
+                <p>给它一张参考Figure，它会对齐布局、配色和模块关系，重绘出投稿级的架构图与统计图。</p>
+                <div class="feature-screenshot">
+                  <img src="产品界面介绍/draw-style-ref.png" alt="模仿图片风格绘图" loading="lazy" class="screenshot-img">
+                </div>
+              </div>
+              <div class="feature-card feature-card--green">
+                <h3>说人话就能开始</h3>
+                <p>以自然语言、语音或非结构化描述即可组织为可执行的研究任务，降低学习门槛。</p>
+                <div class="feature-screenshot">
+                  <img src="产品界面介绍/natural-language.png" alt="说人话就能开始" loading="lazy" class="screenshot-img">
+                </div>
+              </div>
+            </div>
+            <div class="feature-grid">
+              <div class="feature-card">
+                <h3>对话再长也不丢线索</h3>
+                <p>自动压缩对话历史并按需检索关键信息，确保跨日乃至数周的项目始终保有完整上下文。</p>
+              </div>
+              <div class="feature-card">
+                <h3>写完就能跑的代码</h3>
+                <p>可代码化的科研流程全部在桌面端内完成生成、调试与结果输出，无需切换工具。</p>
+              </div>
+              <div class="feature-card">
+                <h3>云端聊天框做不到的事</h3>
+                <p>本地运行决定了它可以录屏、控制浏览器、读写本地文件，并调度多类自动化技能协同完成复杂需求。</p>
+              </div>
+            </div>
+            <div class="wide-note">
+              <div class="tag">Creative Boundary</div>
+              <p>预置能力只是起点。清楚描述目标，系统即可组织可验证的执行路径。</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="module-detail" data-module-panel="2">
+          <div class="detail-header">
+            <div>
+              <h3>RSR 自主实验</h3>
+              <p>RSR（Research Self-Running）是桌面端的长程自主执行引擎。给出一个研究目标，它会自主连接算力、搭建环境、运行任务，并在失败后修正重试，直至拿到可交付的实验结果。</p>
+            </div>
+            <span class="pill">长程任务模式</span>
+          </div>
+          <div class="detail-content">
+            <div class="feature-hero-row">
+              <div class="feature-card feature-card--green">
+                <h3>自主搭建环境</h3>
+                <p>输入研究目标，自动连接算力、配置依赖并启动实验。</p>
+                <div class="feature-screenshot">
+                  <img src="产品界面介绍/auto-env-setup.png" alt="自主搭建环境" loading="lazy" class="screenshot-img">
+                </div>
+              </div>
+              <div class="feature-card feature-card--green">
+                <h3>自我修正与经验沉淀</h3>
+                <p>实验失败后自动分析原因、调整策略并重试，将有效方案沉淀为可复用经验。</p>
+                <div class="feature-screenshot">
+                  <img src="产品界面介绍/self-correction.png" alt="自我修正与经验沉淀" loading="lazy" class="screenshot-img">
+                </div>
+              </div>
+            </div>
+            <div class="feature-grid">
+              <div class="feature-card">
+                <h3>进程监控与异常恢复</h3>
+                <p>实时监测实验进程与GPU利用率，异常时自动保存现场并恢复。</p>
+                <div class="feature-screenshot">
+                  <img src="产品界面介绍/process-monitor.png" alt="进程监控与异常恢复" loading="lazy" class="screenshot-img">
+                </div>
+              </div>
+              <div class="feature-card">
+                <h3>结果按需交付</h3>
+                <p>实验运行结束后自动汇总日志、指标与产物，按项目归档并同步通知。</p>
+                <div class="feature-screenshot">
+                  <img src="产品界面介绍/result-delivery.png" alt="结果按需交付" loading="lazy" class="screenshot-img">
+                </div>
+              </div>
+              <div class="feature-card">
+                <h3>全程可审计</h3>
+                <p>每一次操作、权限调用和资源访问均记录在案，可回溯、可检查。</p>
+                <div class="feature-screenshot">
+                  <img src="产品界面介绍/audit-trail.png" alt="全程可审计" loading="lazy" class="screenshot-img">
+                </div>
+              </div>
+            </div>
+            <div class="wide-note">
+              <div class="tag">Self-Evolving Research</div>
+              <p>RSR 将长程实验拆成可追踪、可复现的桌面执行流。</p>
+            </div>
+          </div>
+        </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section trust-section" id="proof" aria-labelledby="proof-title">
+      <div class="container">
+        <div class="trust-headline reveal">
+          <p class="section-kicker">Proof</p>
+          <h2 class="section-title" id="proof-title">论文已通过同行评审</h2>
+          <p class="section-lede">真正的科研工具，最终要由可被验证的成果作答。</p>
+        </div>
+
+        <div class="trust-lead reveal">
+          <div class="trust-lead-figure">
+            <div class="trust-lead-num" data-count="22" data-suffix="篇">0<small>篇</small></div>
+            <div class="trust-lead-cap">Accepted Papers</div>
+          </div>
+          <div class="trust-lead-copy">
+            <p>已支撑 <strong>22 篇</strong>顶会 / 顶刊录用，覆盖 ICML、ASE 等方向——从文献调研、实验代码到成稿投稿，全流程在一个桌面环境内完成，并顺利通过了最严格的同行评审。</p>
+            <div class="trust-venues" aria-label="录用会议与期刊">
+              <span>ICML</span>
+              <span>ASE</span>
+              <span>NeurIPS</span>
+              <span>ACL</span>
+              <span>更多方向持续更新</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="trust-cards" data-stagger aria-label="用户反馈">
+          <div class="trust-card reveal">
+            <p class="trust-quote">主实验和消融从晚上开始跑，第二天直接拿到结果表，返工主要集中在判断，而不是环境。</p>
+            <p class="trust-by">博士研究生 · 机器学习方向</p>
+          </div>
+          <div class="trust-card reveal">
+            <p class="trust-quote">重绘 Figure 从反复调整变成一次校准，投稿前的图表返修少了很多。</p>
+            <p class="trust-by">课题组研究助理 · 材料科学</p>
+          </div>
+          <div class="trust-card reveal">
+            <p class="trust-quote">文献、代码和算力沿同一项目推进，投稿材料整理更顺，少了最后阶段的补漏。</p>
+            <p class="trust-by">青年教师 · 计算机学院</p>
+          </div>
+        </div>
+
+        <div class="proof-more reveal">
+          <button class="proof-more-link" type="button" id="papers-trigger"
+                  data-papers-url="https://paperguru.ai/accepted-papers">
+            查看全部录用论文
+            <span class="arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section no-border eco-section" id="ecosystem" aria-labelledby="ecosystem-title">
+      <div class="container">
+        <div class="science-headline reveal">
+          <p class="section-kicker">Ecosystem</p>
+          <h2 class="section-title" id="ecosystem-title">支撑它的技术底座</h2>
+          <p class="section-lede">这里只展示支撑 PaperGuru 的三项底座：实验室部署、桌面执行框架与自研模型能力。</p>
+        </div>
+
+        <div class="eco-default-view">
+          <div class="eco-grid" aria-label="产品生态" data-stagger>
+            <div class="eco-item reveal" data-eco="1">
+              <span class="eco-tag">Enterprise</span>
+              <h3>ScienceGroup</h3>
+              <p>课题组/实验室部署服务：把设备、数据与流程接入可托管的科研环境。</p>
+              <button class="eco-pill" type="button" aria-expanded="false">详细解说</button>
+            </div>
+            <div class="eco-item reveal" data-eco="2">
+              <span class="eco-tag">Framework</span>
+              <h3>Cultura<span class="eco-note">自研执行框架</span></h3>
+              <p>桌面端自动化能力的底层引擎，让模型真正去调用系统、跑完任务。</p>
+              <button class="eco-pill" type="button" aria-expanded="false">详细解说</button>
+            </div>
+            <div class="eco-item reveal" data-eco="3">
+              <span class="eco-tag">Open Model</span>
+              <h3>Guru 系列模型<span class="eco-note">自研大模型</span></h3>
+              <p>自研调优模型逐步替代第三方，让高频科研的订阅成本更可控。</p>
+              <button class="eco-pill" type="button" aria-expanded="false">详细解说</button>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="eco-detail-stage">
+          <button class="module-back eco-back" type="button">
+            <span class="arrow" aria-hidden="true">←</span>
+            返回产品生态
+          </button>
+
+          <article class="module-detail eco-detail" data-eco-panel="1">
+            <div class="detail-header">
+              <div>
+                <h3>ScienceGroup</h3>
+                <p>面向课题组与实验室的部署服务，将设备、软件和数据接口接入统一、可托管的科研环境。</p>
+              </div>
+              <span class="pill">Enterprise</span>
+            </div>
+            <div class="detail-content">
+              <div class="eco-detail-video">
+                <div class="module-video-frame">
+                  <div class="module-video-placeholder">
+                    <span class="module-video-label">Product Walkthrough</span>
+                    <span class="module-video-hint">16:9 讲解视频预留位</span>
+                  </div>
+                </div>
+              </div>
+              <div class="feature-grid">
+                <div class="feature-card">
+                  <h3>实验室定制搭建</h3>
+                  <p>按实验室设备和流程定制 Playground 与数据接口。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>湿实验自动化</h3>
+                  <p>采集实验数据，自动分析，并支持必要的人工介入。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>硬件设备对接</h3>
+                  <p>按硬件清单搭建监控平台，接管关键数据和信号。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>无人托管模式</h3>
+                  <p>在条件成熟时，让机器人接管实验动作和状态判断。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>课题组协作</h3>
+                  <p>同一组织白名单登录，成员共享实验与模型能力。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>定制化服务</h3>
+                  <p>按课题组需求与预算分阶段搭建。</p>
+                </div>
+              </div>
+              <div class="eco-detail-conditions">
+                <h4 class="eco-detail-section-title">接入条件</h4>
+                <div class="science-criteria" aria-label="ScienceGroup 接入条件">
+                  <div class="criterion-card">
+                    <span class="criterion-index">01</span>
+                    <h3>数据可读取</h3>
+                    <p>仪器、软件或传感器能够稳定输出结构化数据、图像、曲线或日志。</p>
+                  </div>
+                  <div class="criterion-card">
+                    <span class="criterion-index">02</span>
+                    <h3>接口可连接</h3>
+                    <p>实验设备、仿真软件或自动化平台具备 API、文件监听或可接管的控制通道。</p>
+                  </div>
+                  <div class="criterion-card">
+                    <span class="criterion-index">03</span>
+                    <h3>流程可验证</h3>
+                    <p>实验步骤、状态检查和结果判断可以被明确记录，并交由系统持续追踪。</p>
+                  </div>
+                </div>
+              </div>
+              <div class="eco-detail-scenes">
+                <h4 class="eco-detail-section-title">适用场景</h4>
+                <div class="scene-list" aria-label="ScienceGroup 适用场景">
+                  <article class="scene-type">
+                    <div class="scene-head">
+                      <span class="scene-num">01</span>
+                      <span class="scene-name">硬件仪器</span>
+                      <span class="scene-desc">Instrument Data</span>
+                    </div>
+                    <div class="scene-body">
+                      <p class="scene-copy">适合会直接产生实验图谱、图像或参数的设备，可接入采集、监控与结果回传。</p>
+                      <div class="scene-examples">
+                        <span>XRD / SEM</span>
+                        <span>HPLC / NMR</span>
+                        <span>电池测试</span>
+                      </div>
+                    </div>
+                  </article>
+                  <article class="scene-type">
+                    <div class="scene-head">
+                      <span class="scene-num">02</span>
+                      <span class="scene-name">仿真软件</span>
+                      <span class="scene-desc">Simulation Output</span>
+                    </div>
+                    <div class="scene-body">
+                      <p class="scene-copy">适合计算流体、量子化学、结构力学等仿真任务，自动运行、读取输出并整理结果。</p>
+                      <div class="scene-examples">
+                        <span>OpenFOAM</span>
+                        <span>COMSOL</span>
+                        <span>VASP</span>
+                      </div>
+                    </div>
+                  </article>
+                  <article class="scene-type">
+                    <div class="scene-head">
+                      <span class="scene-num">03</span>
+                      <span class="scene-name">传感观测</span>
+                      <span class="scene-desc">Continuous Signals</span>
+                    </div>
+                    <div class="scene-body">
+                      <p class="scene-copy">适合长时序监测与多源观测，将连续数据流纳入自动分析和异常追踪。</p>
+                      <div class="scene-examples">
+                        <span>环境监测</span>
+                        <span>农业 IoT</span>
+                        <span>EEG / fMRI</span>
+                      </div>
+                    </div>
+                  </article>
+                  <article class="scene-type">
+                    <div class="scene-head">
+                      <span class="scene-num">04</span>
+                      <span class="scene-name">自动化流程</span>
+                      <span class="scene-desc">Robotic Workflow</span>
+                    </div>
+                    <div class="scene-body">
+                      <p class="scene-copy">适合机器人、产线或实验平台，将实验动作、状态信号和结果判断纳入托管流程。</p>
+                      <div class="scene-examples">
+                        <span>液体处理</span>
+                        <span>自动合成</span>
+                        <span>工业测试</span>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+              </div>
+              <div class="wide-note">
+                <div class="tag">Lab Automation</div>
+                <p>把实验室变成可记录、可调用、可验证的托管流程。</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="module-detail eco-detail" data-eco-panel="2">
+            <div class="detail-header">
+              <div>
+                <h3>Cultura</h3>
+                <p>自研执行框架，支撑 PaperGuru IDE 的桌面能力和自动化流程。</p>
+              </div>
+              <span class="pill">Framework</span>
+            </div>
+            <div class="detail-content">
+              <div class="eco-detail-video">
+                <div class="module-video-frame">
+                  <div class="module-video-placeholder">
+                    <span class="module-video-label">Product Walkthrough</span>
+                    <span class="module-video-hint">16:9 讲解视频预留位</span>
+                  </div>
+                </div>
+              </div>
+              <div class="feature-grid">
+                <div class="feature-card">
+                  <h3>自研编程框架</h3>
+                  <p>PaperGuru IDE 基于 Cultura 构建，拥有自有执行框架。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>RSI 执行引擎</h3>
+                  <p>面向 Research Self-Improving（研究自我改进）工作流设计，让模型在反馈中不断优化，支撑复杂科研任务。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>无 Loop 架构</h3>
+                  <p>用程序化监听替代"盲目反复重试"，只在需要时才动作，减少算力浪费。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>系统能力封装</h3>
+                  <p>封装录屏、浏览器、文件、SSH 和网络调用等能力。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>结构化事件流</h3>
+                  <p>操作以结构化事件记录，便于回溯和复现。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>跨场景迁移</h3>
+                  <p>可迁移到湿实验、机器人训练和仿真模拟等场景。</p>
+                </div>
+              </div>
+              <div class="wide-note">
+                <div class="tag">Execution Engine</div>
+                <p>Cultura 让模型从“生成文本”走向“调用系统能力完成任务”。</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="module-detail eco-detail" data-eco-panel="3">
+            <div class="detail-header">
+              <div>
+                <h3>Guru 系列模型</h3>
+                <p>自研调优大模型系列，支撑 PaperGuru 的模型能力和订阅体系。</p>
+              </div>
+              <span class="pill">Open Model</span>
+            </div>
+            <div class="detail-content">
+              <div class="eco-detail-video">
+                <div class="module-video-frame">
+                  <div class="module-video-placeholder">
+                    <span class="module-video-label">Product Walkthrough</span>
+                    <span class="module-video-hint">16:9 讲解视频预留位</span>
+                  </div>
+                </div>
+              </div>
+              <div class="feature-grid">
+                <div class="feature-card">
+                  <h3>开源到社区</h3>
+                  <p>已释放多个开源模型，社区可免费使用。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>替换第三方模型</h3>
+                  <p>逐步承接 Master / Prime / Standard 等模型能力。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>成本可控</h3>
+                  <p>自有模型与服务器让成本更可控。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>科研专用调优</h3>
+                  <p>面向写作、代码和实验设计做科研场景调优。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>自部署服务</h3>
+                  <p>以服务形式部署，供 PaperGuru 调用。</p>
+                </div>
+                <div class="feature-card">
+                  <h3>本地化可控</h3>
+                  <p>支持更可控的模型和数据使用方式。</p>
+                </div>
+              </div>
+              <div class="wide-note">
+                <div class="tag">Self-Developed LLM</div>
+                <p>自研模型降低高频使用成本，让订阅制更稳定。</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section pricing-section" id="pricing" aria-label="价格介绍">
+      <div class="container">
+        <div class="science-headline reveal">
+          <p class="section-kicker">Pricing</p>
+          <h2 class="section-title">价格介绍</h2>
+        </div>
+        <div class="pricing-card reveal">
+          <span class="pricing-label">Beta Access</span>
+          <strong>IDE测试版 GURU-nano-1.2模型供内测白名单内用户免费体验7天</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="section contact-section" id="contact">
+      <div class="container">
+        <div class="contact-closing reveal">
+          <div class="brand-mark">PaperGuru<span class="dot">.</span></div>
+          <p class="contact-belief">脱离繁琐,专注思考</p>
+          <div class="contact-actions">
+            <button class="contact-pill" type="button" data-contact-open>下载</button>
+            <button class="contact-pill" type="button" id="contact-trigger">联系顾问</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- 联系我们弹窗 — 预留企业微信表单跳转位置 -->
+<div class="contact-modal-overlay" id="contact-modal-overlay" aria-hidden="true">
+  <div class="contact-modal" role="dialog" aria-modal="true">
+    <button class="contact-modal-close" type="button" aria-label="关闭">×</button>
+    <div class="contact-modal-head">
+      <p class="section-kicker">Contact</p>
+      <h2>开始使用 PaperGuru</h2>
+      <p>留下联系方式，我们会在 24 小时内发送开通指引；企业版需求也会由顾问跟进。</p>
+    </div>
+    <form class="contact-form" action="#" method="post" onsubmit="event.preventDefault();">
+      <div class="contact-field">
+        <label for="contact-name">姓名</label>
+        <input type="text" id="contact-name" name="name" placeholder="请输入您的姓名" required>
+      </div>
+      <div class="contact-field">
+        <label for="contact-email">邮箱</label>
+        <input type="email" id="contact-email" name="email" placeholder="请输入您的邮箱" required>
+      </div>
+      <div class="contact-field">
+        <label for="contact-org">机构 / 课题组</label>
+        <input type="text" id="contact-org" name="org" placeholder="请输入您的机构或课题组名称">
+      </div>
+      <div class="contact-field">
+        <label for="contact-message">留言</label>
+        <textarea id="contact-message" name="message" rows="3" placeholder="请简要描述您的需求或问题"></textarea>
+      </div>
+      <!-- 预留跳转：将表单提交替换为企业微信表单链接或二维码 -->
+      <button class="eco-pill contact-submit" type="submit">提交</button>
+    </form>
+  </div>
+</div>
+
+<!-- 录用论文长图弹窗：竖向滚动浏览一张整理好的成品长图，不跳转即可查看 -->
+<div class="papers-modal-overlay" id="papers-modal-overlay" aria-hidden="true">
+  <div class="papers-modal" role="dialog" aria-modal="true" aria-label="全部录用论文">
+    <div class="papers-modal-head">
+      <div class="papers-modal-title">
+        <strong>全部录用论文</strong>
+        <span>向下滚动浏览完整成果</span>
+      </div>
+      <div class="papers-modal-actions">
+        <a class="papers-modal-open" id="papers-open-tab" href="https://paperguru.ai/accepted-papers" target="_blank" rel="noopener">
+          新标签打开官网 ↗
+        </a>
+        <button class="papers-modal-close" type="button" aria-label="关闭">×</button>
+      </div>
+    </div>
+    <div class="papers-modal-body" id="papers-scroll" tabindex="0">
+      <img id="papers-image"
+           src="accepted-papers.jpeg"
+           alt="PaperGuru 全部录用论文成果长图"
+           style="display:block;width:100%;height:auto;border:0;">
+    </div>
+    <div class="papers-scroll-hint" id="papers-scroll-hint" aria-hidden="true">
+       向下滚动 <span class="chev">↓</span>
+     </div>
+   </div>
+</div>
+
+<!-- ============ 截图放大 Lightbox ============ -->
+<div class="lightbox-overlay" id="screenshot-lightbox" aria-hidden="true">
+  <button class="lightbox-close" type="button" aria-label="关闭">&times;</button>
+  <img src="" alt="" id="lightbox-img">
+</div>
+
+<!-- Three.js（UMD，CDN）：首屏 3D 星图使用；加载失败/超时由主脚本降级为直接显示介绍 -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"
+        crossorigin="anonymous"
+        onerror="window.__threeFailed=true"></script>
+
+<script>
+(function(){
+  /* 标记 JS 就绪：用于 reveal 类的渐进增强（无 JS 时内容正常可见） */
+  document.documentElement.classList.add('js');
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ============ 0. 首屏 3D 星图（Three.js）+ 逐枢纽讲解编排 ============ */
+  (function(){
+    var hero = document.querySelector('[data-hero]');
+    if(!hero) return;
+    var starmap    = hero.querySelector('.starmap');
+    var canvas     = document.getElementById('starmap-canvas');
+    var labelLayer = document.getElementById('starmap-labels');
+    var revealed = false, started = false, timers = [], raf = 0;
+    var isPhone = window.matchMedia('(max-width:40rem)').matches;
+
+    function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+
+    /* 介绍文字依次入场：主标题 → 次标题 → 正文 → 两个药丸（最后同时） */
+    function playIntro(){
+      var seq = hero.querySelectorAll('.hero-intro .seq');
+      if(reduceMotion){ seq.forEach(function(el){ el.classList.add('seq-in'); }); return; }
+      seq.forEach(function(el, i){
+        timers.push(setTimeout(function(){ el.classList.add('seq-in'); }, 120 + i*460));
+      });
+    }
+
+    /* 进入第二幕（产品介绍） */
+    function reveal(){
+      if(revealed) return;
+      revealed = true;
+      clearTimers();
+      if(raf) cancelAnimationFrame(raf);
+      hero.classList.add('hero-fading');
+      setTimeout(function(){
+        hero.classList.add('hero-revealed');
+        playIntro();
+      }, reduceMotion ? 0 : 620);
+    }
+    /* 通用降级：不满足 3D 条件时直接显示介绍（并跑文字入场） */
+    function fallback(){ hero.classList.add('hero-revealed'); playIntro(); }
+
+    /* 仅保留"滚动跳过"（取消跳过按钮 / 点击跳转 / 键盘跳过） */
+    window.addEventListener('scroll', function onScroll(){
+      if(window.scrollY > 4){ reveal(); window.removeEventListener('scroll', onScroll); }
+    }, {passive:true});
+
+    /* reduced-motion 或 WebGL 不支持：直接降级 */
+    function webglOK(){
+      try{ var c=document.createElement('canvas');
+        return !!(window.WebGLRenderingContext && (c.getContext('webgl')||c.getContext('experimental-webgl'))); }
+      catch(e){ return false; }
+    }
+    if(reduceMotion || !canvas || !webglOK()){ fallback(); return; }
+
+    /* 等待 Three.js（CDN）就绪；超时或失败则降级 */
+    var waited = 0;
+    (function waitThree(){
+      if(window.__threeFailed){ fallback(); return; }
+      if(window.THREE){ initScene(); return; }
+      if(waited > 2600){ fallback(); return; }   /* CDN 超时兜底 */
+      waited += 80;
+      setTimeout(waitThree, 80);
+    })();
+
+    /* ---------- 3D 场景与编排 ---------- */
+    function initScene(){
+      var THREE = window.THREE;
+
+      /* 数据模型 + 参考图布局：枢纽绕中心放射，二级词围绕各自枢纽。
+         hub.pos 为枢纽在场景中的方位；leaves 以枢纽为锚点、按给定角度散布。 */
+      var hubs = [
+        { name:'文献洞察', pos:[-4.45, 0.72], leaves:['全库检索','脉络溯源','去伪存真','跨语言综述'] },
+        { name:'精准实验', pos:[-1.18, 1.82], leaves:['方案设计','协议复现','变量把控','批量跑批'] },
+        { name:'数据分析', pos:[ 2.65, 1.22], leaves:['可视洞察','异常识别','统计严谨','结论可信'] },
+        { name:'科研绘图', pos:[ 4.32,-0.52], leaves:['风格迁移','架构重绘','投稿配色'] },
+        { name:'论文写作', pos:[ 1.25,-1.82], leaves:['逻辑通顺','术语规范','图表联动','投稿适配'] },
+        { name:'代码复现', pos:[-3.58,-1.32], leaves:['环境重建','脚本调试','算力接入'] }
+      ];
+
+      var scene = new THREE.Scene();
+      var camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+      camera.position.set(0, 0, 13.4);
+
+      var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:true});
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+      function resize(){
+        var w = starmap.clientWidth, h = starmap.clientHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w/h; camera.updateProjectionMatrix();
+      }
+      resize();
+      window.addEventListener('resize', resize, {passive:true});
+
+      var group = new THREE.Group(); scene.add(group);
+      var layoutScale = isPhone ? 0.76 : 1;
+
+      /* 软光晕贴图：用离屏 canvas 绘制径向渐变，替代纯色圆点，获得星芒柔光质感 */
+      function glowTexture(size, colorInner, colorOuter){
+        var c = document.createElement('canvas'); c.width = c.height = size;
+        var ctx = c.getContext('2d');
+        var g = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+        g.addColorStop(0, colorInner);
+        g.addColorStop(0.18, colorInner);
+        g.addColorStop(0.55, colorOuter);
+        g.addColorStop(1, 'transparent');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
+        return new THREE.CanvasTexture(c);
+      }
+      var glowTexWarm = glowTexture(128, 'rgba(236,217,180,0.95)', 'rgba(169,128,76,0.0)');
+      var glowTexCool = glowTexture(128, 'rgba(180,200,255,0.85)', 'rgba(100,130,220,0.0)');
+      var glowTexWhite = glowTexture(128, 'rgba(255,255,255,0.9)', 'rgba(200,200,220,0.0)');
+
+      /* 星云层：不参与交互，只提供轻微漂移的空间深度 */
+      var dustGroup = new THREE.Group();
+      group.add(dustGroup);
+
+      function makeDustSprite(count, radiusX, radiusY, tex, size, opacity, zSpread, centerWarm){
+        var positions = new Float32Array(count * 3);
+        var warmWeights = new Float32Array(count); // per-particle 冷暖权重
+        for(var i=0;i<count;i++){
+          var r = Math.pow(Math.random(), 0.48);
+          var a = Math.random() * Math.PI * 2;
+          var swirl = Math.sin(a * 3) * 0.18;
+          positions[i*3] = Math.cos(a + swirl) * radiusX * r + (Math.random() - 0.5) * 0.38;
+          positions[i*3+1] = Math.sin(a) * radiusY * r + (Math.random() - 0.5) * 0.28;
+          positions[i*3+2] = (Math.random() - 0.5) * zSpread;
+          warmWeights[i] = centerWarm ? Math.max(0, 1 - r * 1.6) : r; // centerWarm: 内暖外冷
+        }
+        var geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geo.setAttribute('warmWeight', new THREE.BufferAttribute(warmWeights, 1));
+        var mat = new THREE.PointsMaterial({
+          map:tex,
+          size:size,
+          transparent:true,
+          opacity:opacity,
+          blending:THREE.AdditiveBlending,
+          depthWrite:false
+        });
+        var pts = new THREE.Points(geo, mat);
+        pts.userData = { warmWeights:warmWeights, baseOpacity:opacity };
+        dustGroup.add(pts);
+        return pts;
+      }
+      var dustWarm = makeDustSprite(isPhone ? 60 : 120, 7.2 * layoutScale, 3.0 * layoutScale, glowTexWarm, 0.12, 0.28, 1.6, true);
+      var dustCool = makeDustSprite(isPhone ? 40 : 80, 6.4 * layoutScale, 2.5 * layoutScale, glowTexCool, 0.10, 0.22, 2.1, false);
+
+      function makeClusterDustSprite(cx, cy, halfCount, tex, size, opacity){
+        var positions = new Float32Array(halfCount * 3);
+        for(var i=0;i<halfCount;i++){
+          var a = Math.random() * Math.PI * 2;
+          var r = Math.pow(Math.random(), 1.5);
+          var tangent = Math.atan2(cy, cx) + Math.PI / 2;
+          var stretch = 0.55 + Math.random() * 0.4;
+          var localX = Math.cos(a) * r * 0.72 * layoutScale;
+          var localY = Math.sin(a) * r * 0.38 * stretch * layoutScale;
+          positions[i*3] = cx + Math.cos(tangent) * localX - Math.sin(tangent) * localY;
+          positions[i*3+1] = cy + Math.sin(tangent) * localX + Math.cos(tangent) * localY;
+          positions[i*3+2] = (Math.random() - 0.5) * 0.6;
+        }
+        var geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        var mat = new THREE.PointsMaterial({
+          map:tex,
+          size:size,
+          transparent:true,
+          opacity:opacity,
+          blending:THREE.AdditiveBlending,
+          depthWrite:false
+        });
+        var pts = new THREE.Points(geo, mat);
+        pts.userData = { baseOpacity:opacity };
+        dustGroup.add(pts);
+        return pts;
+      }
+      var clusterDust = [];
+      hubs.forEach(function(h, i){
+        var isWarm = i % 2 === 0;
+        clusterDust.push(makeClusterDustSprite(
+          h.pos[0] * layoutScale, h.pos[1] * layoutScale,
+          isPhone ? 8 : 16,
+          isWarm ? glowTexWarm : glowTexCool,
+          isWarm ? 0.10 : 0.08,
+          isWarm ? 0.16 : 0.12
+        ));
+      });
+      var centerDust = makeClusterDustSprite(0, 0, isPhone ? 10 : 20, glowTexWhite, 0.09, 0.16);
+      clusterDust.push(centerDust);
+
+      function mkLabel(cls, text){
+        var el = document.createElement('div');
+        el.className = 'smap-label ' + cls; el.textContent = text;
+        labelLayer.appendChild(el); return el;
+      }
+
+      /* ---------- 构建节点（固定 home 位置 + 轻微浮动，无发光星体） ---------- */
+      /* 节点：{home, pos, layer, label, phase, amp} */
+      var nodes = [], edges = [];
+      function addNode(layer, cls, text, hx, hy, hz){
+        var n = {
+          layer:layer,
+          home:new THREE.Vector3(hx * layoutScale, hy * layoutScale, hz||0),
+          pos:new THREE.Vector3(hx * layoutScale, hy * layoutScale, hz||0),
+          label:mkLabel(cls, text),
+          phase:Math.random()*Math.PI*2,
+          amp:0.12 + Math.random()*0.12    // 轻微浮动幅度
+        };
+        nodes.push(n); return n;
+      }
+      var core = addNode(0, 'smap-core', '科研人的声音', 0, 0, 0);
+      core.amp = 0; // 中心基本不动
+      hubs.forEach(function(h){
+        var hub = addNode(1, 'smap-hub', h.name, h.pos[0], h.pos[1], 0);
+        edges.push({a:core, b:hub, layer:1});
+        var n = h.leaves.length;
+        // 叶子围绕枢纽：以枢纽向外的方向为基准，扇形散开（参考图那样紧邻枢纽）
+        var baseAng = Math.atan2(h.pos[1], h.pos[0]);
+        h.leaves.forEach(function(txt, li){
+          var spread = (li - (n-1)/2) * 0.34;      // 扇形角度，参考关系图的轻散射结构
+          var ang = baseAng + spread;
+          var rad = 1.46 + (li%2)*0.36;            // 末级词外放但降亮，形成多而不乱的末梢
+          var lx = h.pos[0] + Math.cos(ang)*rad;
+          var ly = h.pos[1] + Math.sin(ang)*rad;
+          var lf = addNode(2, 'smap-leaf', txt, lx, ly, (Math.random()-0.5)*0.4);
+          edges.push({a:hub, b:lf, layer:2});
+        });
+      });
+
+      /* 连线：分层描边生长（grow 0→1，child 端点从 parent 生长到 target） */
+      var lineMat = new THREE.LineBasicMaterial({color:0xe8d5af, transparent:true, opacity:0.22, blending:THREE.AdditiveBlending, depthWrite:false});
+      var linePos = new Float32Array(edges.length*6);
+      var lineGeo = new THREE.BufferGeometry();
+      lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos,3));
+      var lines = new THREE.LineSegments(lineGeo, lineMat); group.add(lines);
+      edges.forEach(function(e){ e.grow = 0; });   // 初始未生长
+
+      /* 投影到屏幕坐标 */
+      var v = new THREE.Vector3();
+      function project(n){
+        if(!n.label) return;
+        v.copy(n.pos); v.project(camera);
+        var w = starmap.clientWidth, h = starmap.clientHeight;
+        n.label.style.setProperty('--sx', ((v.x*0.5+0.5)*w).toFixed(1)+'px');
+        n.label.style.setProperty('--sy', ((-v.y*0.5+0.5)*h).toFixed(1)+'px');
+      }
+
+      /* ---------- 渲染循环：固定 home + 轻微浮动 + 整体极缓摆动 ---------- */
+      var t0 = performance.now();
+      var ea = new THREE.Vector3(), eb = new THREE.Vector3();
+      function animate(now){
+        raf = requestAnimationFrame(animate);
+        var t = (now - t0)/1000;
+        group.rotation.y = Math.sin(t*0.075)*0.052;   // 整体极缓摆动，保留"活着"感
+        group.rotation.x = Math.sin(t*0.052)*0.022;
+        dustGroup.rotation.z = Math.sin(t*0.03)*0.024;
+        dustGroup.rotation.y = Math.sin(t*0.048)*0.038;
+        /* 软光晕粒子呼吸：暖区与冷区各自微动 */
+        if(dustWarm.userData && dustWarm.userData.baseOpacity !== undefined){
+          dustWarm.material.opacity = dustWarm.userData.baseOpacity + Math.sin(t * 0.75) * 0.025;
+        } else {
+          dustWarm.material.opacity = 0.25 + Math.sin(t * 0.75) * 0.025;
+        }
+        if(dustCool.userData && dustCool.userData.baseOpacity !== undefined){
+          dustCool.material.opacity = dustCool.userData.baseOpacity + Math.cos(t * 0.62) * 0.022;
+        } else {
+          dustCool.material.opacity = 0.19 + Math.cos(t * 0.62) * 0.022;
+        }
+        clusterDust.forEach(function(pts, i){
+          var base = (pts.userData && pts.userData.baseOpacity !== undefined) ? pts.userData.baseOpacity : 0.1;
+          pts.material.opacity = base + Math.sin(t * 0.5 + i) * 0.02;
+        });
+        // 节点：home 附近轻微浮动
+        nodes.forEach(function(n){
+          n.pos.x = n.home.x + Math.sin(t*0.6 + n.phase)*n.amp;
+          n.pos.y = n.home.y + Math.cos(t*0.5 + n.phase*1.3)*n.amp;
+          n.pos.z = n.home.z + Math.sin(t*0.4 + n.phase)*n.amp*0.6;
+          project(n);
+        });
+        // 连线：从 parent 端点向 child 端点按 grow 生长
+        edges.forEach(function(e, k){
+          ea.copy(e.a.pos);
+          eb.copy(e.a.pos).lerp(e.b.pos, e.grow);
+          linePos[k*6]=ea.x; linePos[k*6+1]=ea.y; linePos[k*6+2]=ea.z;
+          linePos[k*6+3]=eb.x; linePos[k*6+4]=eb.y; linePos[k*6+5]=eb.z;
+        });
+        lineGeo.attributes.position.needsUpdate = true;
+        renderer.render(scene, camera);
+      }
+      raf = requestAnimationFrame(animate);
+
+      /* ---------- 补间工具 ---------- */
+      function tween(ms, onStep){
+        var start = performance.now();
+        (function step(now){
+          var p = Math.min((now-start)/ms, 1), e = 1-Math.pow(1-p,3);
+          onStep(e);
+          if(p<1) requestAnimationFrame(step);
+        })(performance.now());
+      }
+      function growEdges(layer, ms){
+        var es = edges.filter(function(e){return e.layer===layer;});
+        tween(ms, function(e){
+          var spread = es.length > 8 ? 0.46 : 0.28;
+          es.forEach(function(ed, i){
+            var delay = es.length > 1 ? (i / (es.length - 1)) * spread : 0;
+            ed.grow = Math.max(0, Math.min(1, (e - delay) / (1 - delay)));
+          });
+        });
+      }
+      function showNodeLabels(layer, stagger){
+        nodes.filter(function(n){return n.layer===layer;}).forEach(function(n, i){
+          if(!n.label) return;
+          timers.push(setTimeout(function(){ n.label.classList.add('show'); }, i * (stagger || 0)));
+        });
+      }
+
+      /* ---------- 编排：开场金色引导语 → 淡出 → 3 层分层显现 ---------- */
+      started = true; starmap.classList.add('started');
+      var lead = document.getElementById('starmap-lead');
+      var LEAD_HOLD = 1650;   // 引导语停留，留出第一幕呼吸感
+      var LEAD_FADE = 720;    // 引导语淡出时长
+      var LAYER_GAP = 1180;   // 分层间隔，主次关系更清楚
+      var GROW = 980;         // 连线生长时长
+      var TAIL_STAY = 5000;   // 星图完整后停留 5 秒，让最终网络可被看清
+
+      // 开场：金色引导语先单独出现（所有元素最前）
+      timers.push(setTimeout(function(){ if(lead) lead.classList.add('show'); }, 150));
+      // 引导语淡出
+      timers.push(setTimeout(function(){ if(lead) lead.classList.add('gone'); }, 150 + LEAD_HOLD));
+
+      // 引导语淡出后开始走星图（基准起点）
+      var START = 150 + LEAD_HOLD + LEAD_FADE;
+      // 层0：中心框浮现
+      timers.push(setTimeout(function(){ showNodeLabels(0, 0); }, START));
+      // 层1：中心→枢纽 连线生长 + 枢纽框浮现
+      timers.push(setTimeout(function(){
+        growEdges(1, GROW);
+        timers.push(setTimeout(function(){ showNodeLabels(1, 115); }, GROW*0.44));
+      }, START + LAYER_GAP));
+      // 层2：枢纽→二级词 连线生长 + 二级词浮现
+      timers.push(setTimeout(function(){
+        growEdges(2, GROW);
+        timers.push(setTimeout(function(){ showNodeLabels(2, 24); }, GROW*0.42));
+      }, START + LAYER_GAP*2));
+      // 收尾：完全出现后停留 5 秒，自动进入产品介绍
+      timers.push(setTimeout(reveal, START + LAYER_GAP*2 + GROW + TAIL_STAY));
+    }
+  })();
+
+  /* ============ 1. 导航栏滚动反馈 ============ */
+  var nav = document.querySelector('.nav');
+  function syncNav(){
+    if(window.scrollY > 10){ nav.classList.add('scrolled'); }
+    else{ nav.classList.remove('scrolled'); }
+  }
+  syncNav();
+  window.addEventListener('scroll', syncNav, {passive:true});
+
+  /* ============ 2. 滚动显现 + 交错延迟 ============ */
+  if('IntersectionObserver' in window && !reduceMotion){
+    /* 容器内子项 stagger */
+    document.querySelectorAll('[data-stagger]').forEach(function(grid){
+      var items = grid.querySelectorAll('.reveal');
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+          if(e.isIntersecting){
+            items.forEach(function(it, idx){
+              /* stagger 延迟设上限：最多累计到第 6 个，避免长列表末尾显现过晚 */
+              it.style.transitionDelay = (Math.min(idx, 5) * 80) + 'ms';
+              it.classList.add('in');
+            });
+            io.unobserve(grid);
+          }
+        });
+      }, {threshold:0.05, rootMargin:'0px 0px 0px 0px'});
+      io.observe(grid);
+    });
+    /* 独立 reveal 元素（如 section-head） */
+    document.querySelectorAll('.reveal').forEach(function(el){
+      if(el.closest('[data-stagger]')) return; /* 容器内已处理 */
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+          if(e.isIntersecting){ el.classList.add('in'); io.unobserve(el); }
+        });
+      }, {threshold:0.05, rootMargin:'0px 0px 0px 0px'});
+      io.observe(el);
+    });
+  }else{
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
+  }
+
+  /* ============ 3. 数字 Count-up ============ */
+  function countUp(el){
+    if(el.dataset.counted === '1') return;
+    el.dataset.counted = '1';
+    var target = parseFloat(el.dataset.count);
+    var prefix = el.dataset.prefix || '';
+    var suffix = el.dataset.suffix || '';
+    if(reduceMotion){
+      el.innerHTML = prefix + target + (suffix ? '<small>' + suffix + '</small>' : '');
+      return;
+    }
+    var dur = 1500, start = performance.now();
+    function frame(now){
+      var p = Math.min((now - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      var val = Math.round(target * eased);
+      el.innerHTML = prefix + val + (suffix ? '<small>' + suffix + '</small>' : '');
+      if(p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+  if('IntersectionObserver' in window){
+    document.querySelectorAll('[data-count]').forEach(function(el){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+          if(e.isIntersecting){ countUp(el); io.unobserve(el); }
+        });
+      }, {threshold:0.6});
+      io.observe(el);
+    });
+  }else{
+    document.querySelectorAll('[data-count]').forEach(countUp);
+  }
+
+
+  /* ============ 6. 产品模块：展开 / 返回（CSS 渐隐渐显，干净利落） ============ */
+  (function(){
+    var section = document.querySelector('.module-section');
+    if(!section) return;
+    var cards = section.querySelectorAll('.module-card');
+    var panels = section.querySelectorAll('.module-detail');
+    var back = section.querySelector('.module-back');
+    var motionDelay = reduceMotion ? 0 : 260;
+    var transitionTimer, fireTimer;
+
+    function openModule(card, panel){
+      var idx = card.getAttribute('data-module');
+      cards.forEach(function(c){ c.classList.remove('firing'); });
+      card.classList.add('firing');
+      cards.forEach(function(item){
+        var active = item === card;
+        item.classList.toggle('active', active);
+        item.setAttribute('aria-expanded', active ? 'true' : 'false');
+      });
+      panels.forEach(function(p){
+        p.classList.toggle('open', p.getAttribute('data-module-panel') === idx);
+      });
+      if(panel){
+        panel.querySelectorAll('[data-count]').forEach(function(el){
+          el.dataset.counted = '';
+          countUp(el);
+        });
+      }
+      fireTimer = window.setTimeout(function(){ card.classList.remove('firing'); }, 360);
+    }
+
+    function showStage(){
+      section.classList.add('detail-mode');
+      section.classList.remove('module-transitioning');
+      var top = section.getBoundingClientRect().top + window.scrollY - 80;
+      if(window.scrollY > top + 40){
+        window.scrollTo({top: top, behavior: reduceMotion ? 'auto' : 'smooth'});
+      }
+    }
+
+    function hideStage(){
+      section.classList.remove('detail-mode','module-returning','module-transitioning');
+      cards.forEach(function(c){
+        c.classList.remove('active');
+        c.setAttribute('aria-expanded', 'false');
+      });
+      panels.forEach(function(p){ p.classList.remove('open'); });
+      var top = section.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({top: top, behavior: reduceMotion ? 'auto' : 'smooth'});
+    }
+
+    cards.forEach(function(card){
+      card.addEventListener('click', function(){
+        var idx = card.getAttribute('data-module');
+        var panel = section.querySelector('.module-detail[data-module-panel="'+idx+'"]');
+        window.clearTimeout(transitionTimer);
+        window.clearTimeout(fireTimer);
+        section.classList.remove('module-returning');
+        /* 先淡出 grid（.module-transitioning），motionDelay 后 display 切换 + stage 淡入 */
+        openModule(card, panel);
+        section.classList.add('module-transitioning');
+        transitionTimer = window.setTimeout(showStage, motionDelay);
+      });
+    });
+
+    if(back){
+      back.addEventListener('click', function(){
+        window.clearTimeout(transitionTimer);
+        section.classList.add('module-returning');
+        transitionTimer = window.setTimeout(hideStage, motionDelay);
+      });
+    }
+  })();
+
+/* ============ 8. 产品生态：内联展开 / 返回 ============ */
+  (function(){
+    var section = document.querySelector('.eco-section');
+    if(!section) return;
+    var pills = section.querySelectorAll('.eco-pill');
+    var panels = section.querySelectorAll('.eco-detail');
+    var back = section.querySelector('.eco-back');
+    var items = section.querySelectorAll('.eco-item');
+    var motionDelay = reduceMotion ? 0 : 260;
+    var transitionTimer;
+
+    function openEco(item, panel){
+      var idx = item.getAttribute('data-eco');
+      items.forEach(function(it){
+        var active = it === item;
+        it.setAttribute('aria-expanded', active ? 'true' : 'false');
+      });
+      panels.forEach(function(p){
+        p.classList.toggle('open', p.getAttribute('data-eco-panel') === idx);
+      });
+    }
+
+    function showEcoStage(){
+      section.classList.add('detail-mode');
+      section.classList.remove('eco-transitioning');
+      var top = section.getBoundingClientRect().top + window.scrollY - 80;
+      if(window.scrollY > top + 40){
+        window.scrollTo({top: top, behavior: reduceMotion ? 'auto' : 'smooth'});
+      }
+    }
+
+    function hideEcoStage(){
+      section.classList.remove('detail-mode','eco-returning','eco-transitioning');
+      items.forEach(function(it){ it.setAttribute('aria-expanded', 'false'); });
+      panels.forEach(function(p){ p.classList.remove('open'); });
+      var top = section.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({top: top, behavior: reduceMotion ? 'auto' : 'smooth'});
+    }
+
+    pills.forEach(function(pill){
+      pill.addEventListener('click', function(){
+        var item = pill.closest('.eco-item');
+        if(!item) return;
+        var idx = item.getAttribute('data-eco');
+        if(idx === null) return;
+        var panel = section.querySelector('.eco-detail[data-eco-panel="'+idx+'"]');
+        window.clearTimeout(transitionTimer);
+        section.classList.remove('eco-returning');
+        openEco(item, panel);
+        section.classList.add('eco-transitioning');
+        transitionTimer = window.setTimeout(showEcoStage, motionDelay);
+      });
+    });
+
+    if(back){
+      back.addEventListener('click', function(){
+        window.clearTimeout(transitionTimer);
+        section.classList.add('eco-returning');
+        transitionTimer = window.setTimeout(hideEcoStage, motionDelay);
+      });
+    }
+  })();
+
+  /* ============ 9. 联系我们弹窗 ============ */
+  (function(){
+    var triggers = document.querySelectorAll('#contact-trigger,[data-contact-open]');
+    var overlay = document.getElementById('contact-modal-overlay');
+    if(!triggers.length || !overlay) return;
+    var closeBtn = overlay.querySelector('.contact-modal-close');
+    var body = document.body;
+
+    function openModal(){
+      overlay.classList.add('open');
+      overlay.setAttribute('aria-hidden', 'false');
+      body.style.overflow = 'hidden';
+    }
+
+    function closeModal(){
+      overlay.classList.remove('open');
+      overlay.setAttribute('aria-hidden', 'true');
+      body.style.overflow = '';
+    }
+
+    triggers.forEach(function(trigger){
+      trigger.addEventListener('click', openModal);
+    });
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', function(e){
+      if(e.target === overlay) closeModal();
+    });
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
+    });
+  })();
+
+  /* ============ 10. 录用论文长图弹窗（竖向滚动看图，不跳转） ============ */
+  (function(){
+    var trigger = document.getElementById('papers-trigger');
+    var overlay = document.getElementById('papers-modal-overlay');
+    if(!trigger || !overlay) return;
+    var scroller = document.getElementById('papers-scroll');
+    var hint = document.getElementById('papers-scroll-hint');
+    var closeBtn = overlay.querySelector('.papers-modal-close');
+    var openTab = document.getElementById('papers-open-tab');
+    var url = trigger.getAttribute('data-papers-url');
+    var body = document.body;
+
+    if(url && openTab){ openTab.setAttribute('href', url); }
+
+    function syncHint(){
+      if(!scroller || !hint) return;
+      var atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 8;
+      var noScroll = scroller.scrollHeight <= scroller.clientHeight + 8;
+      hint.classList.toggle('hidden', atBottom || noScroll);
+    }
+
+    function openModal(){
+      overlay.classList.add('open');
+      overlay.setAttribute('aria-hidden', 'false');
+      body.style.overflow = 'hidden';
+      if(scroller){ scroller.scrollTop = 0; }
+      window.requestAnimationFrame(syncHint);
+    }
+
+    function closeModal(){
+      overlay.classList.remove('open');
+      overlay.setAttribute('aria-hidden', 'true');
+      body.style.overflow = '';
+    }
+
+    trigger.addEventListener('click', openModal);
+    if(closeBtn) closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', function(e){
+      if(e.target === overlay) closeModal();
+    });
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
+    });
+    if(scroller){ scroller.addEventListener('scroll', syncHint, {passive:true}); }
+  })();
+
+  /* ============ 11. 产品截图 Lightbox ============ */
+  (function(){
+    var overlays = document.querySelectorAll('.lightbox-overlay');
+    if(!overlays.length) return;
+
+    overlays.forEach(function(overlay){
+      var img = overlay.querySelector('img');
+      var closeBtn = overlay.querySelector('.lightbox-close');
+
+      function closeLightbox(){
+        overlay.classList.remove('open');
+        overlay.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+      }
+
+      function openLightbox(src, alt){
+        img.src = src;
+        img.alt = alt || '';
+        overlay.classList.add('open');
+        overlay.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+      }
+
+      closeBtn.addEventListener('click', closeLightbox);
+      overlay.addEventListener('click', function(e){
+        if(e.target === overlay) closeLightbox();
+      });
+      document.addEventListener('keydown', function(e){
+        if(e.key === 'Escape' && overlay.classList.contains('open')) closeLightbox();
+      });
+
+      /* 绑定所有 screenshot-img */
+      var thumbnails = document.querySelectorAll('.screenshot-img');
+      thumbnails.forEach(function(thumb){
+        thumb.addEventListener('click', function(){
+          openLightbox(this.src, this.alt);
+        });
+      });
+    });
+  })();
+})();
+</script>
+</body>
+</html>
